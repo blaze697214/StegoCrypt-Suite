@@ -1,4 +1,4 @@
-# StegoCrypt Suite
+# StegoCrypt Suite //Under Development
 
 A modern desktop application for steganography and cryptography operations with a cyberpunk UI. This application allows you to hide secret messages within images using various encryption algorithms.
 
