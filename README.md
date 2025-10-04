@@ -27,7 +27,7 @@ Backend (Python)
 cd code\backend
 ```
 
-2. Create and activate a virtual enviroment (recommended):
+2. Create and activate a virtual environment (recommended):
 
 ```powershell
 python -m venv .venv; .\.venv\Scripts\Activate.ps1
