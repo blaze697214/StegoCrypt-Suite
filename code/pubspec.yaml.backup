@@ -1,0 +1,49 @@
+
+name: stegocrypt_suite
+description: A modern desktop application for steganography and cryptography operations with a cyberpunk UI.
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.0.5
+  window_manager: ^0.3.8
+  file_picker: ^10.3.3
+  cross_file: ^0.3.3
+  path_provider: ^2.1.1
+  image: ^4.1.7
+  share_plus: ^7.2.1
+  http: ^1.1.0
+  dio: ^5.3.2
+  path: ^1.8.3
+  file_selector: ^1.0.3
+  shared_preferences: ^2.5.3
+  crypto: ^3.0.6
+  permission_handler: ^11.3.1
+  
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - assets/logo/
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.otf
+        - asset: assets/fonts/Inter-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.otf
+          weight: 700

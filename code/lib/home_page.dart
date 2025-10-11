@@ -232,41 +232,47 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         const SizedBox(height: 16),
         Row(
           children: [
-            CyberButton(
-              text: 'Encrypt File',
-              icon: Icons.lock_outlined,
-              onPressed: () {
-                Provider.of<AppProvider>(
-                  context,
-                  listen: false,
-                ).setCurrentPage('encrypt');
-              },
-              variant: CyberButtonVariant.primary,
+            Expanded(
+              child: CyberButton(
+                text: 'Encrypt File',
+                icon: Icons.lock_outlined,
+                onPressed: () {
+                  Provider.of<AppProvider>(
+                    context,
+                    listen: false,
+                  ).setCurrentPage('/file-security');
+                },
+                variant: CyberButtonVariant.primary,
+              ),
             ),
             const SizedBox(width: 16),
-            CyberButton(
-              text: 'Hide in Image',
-              icon: Icons.image_outlined,
-              onPressed: () {
-                Provider.of<AppProvider>(
-                  context,
-                  listen: false,
-                ).setCurrentPage('image-stego');
-              },
-              variant: CyberButtonVariant.secondary,
+            Expanded(
+              child: CyberButton(
+                text: 'Hide in Image',
+                icon: Icons.image_outlined,
+                onPressed: () {
+                  Provider.of<AppProvider>(
+                    context,
+                    listen: false,
+                  ).setCurrentPage('/image-steganography');
+                },
+                variant: CyberButtonVariant.secondary,
+              ),
             ),
-            // const SizedBox(width: 16),
-            // CyberButton(
-            //   text: 'Detect Stego',
-            //   icon: Icons.search_outlined,
-            //   onPressed: () {
-            //     Provider.of<AppProvider>(
-            //       context,
-            //       listen: false,
-            //     ).setCurrentPage('detector');
-            //   },
-            //   variant: CyberButtonVariant.outline,
-            // ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: CyberButton(
+                text: 'Generate Hash',
+                icon: Icons.tag_outlined,
+                onPressed: () {
+                  Provider.of<AppProvider>(
+                    context,
+                    listen: false,
+                  ).setCurrentPage('/hashing');
+                },
+                variant: CyberButtonVariant.outline,
+              ),
+            ),
           ],
         ),
       ],

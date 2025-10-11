@@ -8,16 +8,21 @@ class AboutPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('About StegoCrypt Suite', style: CyberTheme.heading1),
+          Text('About StegoCrypt Suite', 
+              style: isDark 
+                  ? CyberTheme.heading1 
+                  : CyberTheme.heading1.copyWith(color: Colors.black87)),
           const SizedBox(height: 8),
           Text(
-            'Advanced toolkit for steganography and cryptography operations',
-            style: CyberTheme.bodyLarge.copyWith(color: CyberTheme.softGray),
+            'Professional-grade steganography and cryptography platform for secure data operations',
+            style: CyberTheme.bodyLarge.copyWith(
+                color: isDark ? CyberTheme.softGray : Colors.black54),
           ),
           const SizedBox(height: 24),
           Expanded(
@@ -27,7 +32,7 @@ class AboutPage extends StatelessWidget {
                   // App Info Card
                   Container(
                     width: double.infinity,
-                    decoration: CyberTheme.glassContainer,
+                    decoration: CyberTheme.glassContainerFor(context),
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       children: [
@@ -49,14 +54,18 @@ class AboutPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'StegoCrypt Suite v1.0.0',
-                          style: CyberTheme.heading2,
+                          'StegoCrypt Suite v1.0',
+                          style: isDark 
+                              ? CyberTheme.heading2 
+                              : CyberTheme.heading2.copyWith(color: Colors.black87),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'A comprehensive desktop application for secure data operations '
-                          'including steganography, cryptography, and digital forensics.',
-                          style: CyberTheme.bodyMedium,
+                          'Enterprise-grade desktop solution for advanced steganography, cryptography, '
+                          'and digital security operations with quantum-resistant encryption support.',
+                          style: isDark 
+                              ? CyberTheme.bodyMedium 
+                              : CyberTheme.bodyMedium.copyWith(color: Colors.black87),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
@@ -64,15 +73,15 @@ class AboutPage extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             CyberButton(
-                              text: 'Website',
+                              text: 'Official Site',
                               icon: Icons.language_outlined,
                               onPressed: () {},
                               variant: CyberButtonVariant.outline,
                             ),
                             const SizedBox(width: 16),
                             CyberButton(
-                              text: 'Documentation',
-                              icon: Icons.menu_book_outlined,
+                              text: 'Support',
+                              icon: Icons.support_agent,
                               onPressed: () {},
                               variant: CyberButtonVariant.outline,
                             ),
@@ -84,110 +93,125 @@ class AboutPage extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
-                  // Features Grid
+                  // Compact Features Grid
                   GridView.count(
                     shrinkWrap: true,
-                    crossAxisCount: 3,
+                    crossAxisCount: 4,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
+                    childAspectRatio: 1.2,
                     children: [
-                      _buildFeatureCard(
-                        'Image Steganography',
+                      _buildCompactFeatureCard(
+                        'Image Stego',
                         Icons.image_outlined,
-                        'Hide messages in images using LSB technique',
+                        'LSB & Advanced',
                         CyberTheme.cyberPurple,
+                        isDark,
                       ),
-                      _buildFeatureCard(
-                        'Audio Steganography',
+                      _buildCompactFeatureCard(
+                        'Audio Stego',
                         Icons.audiotrack_outlined,
-                        'Conceal data in audio files (Coming Soon)',
+                        'Spectral Hiding',
                         CyberTheme.aquaBlue,
+                        isDark,
                       ),
-                      _buildFeatureCard(
-                        'Video Steganography',
+                      _buildCompactFeatureCard(
+                        'Video Stego',
                         Icons.videocam_outlined,
-                        'Embed secrets in video files (Coming Soon)',
+                        'Frame Encoding',
                         CyberTheme.neonPink,
+                        isDark,
                       ),
-                      _buildFeatureCard(
-                        'File Encryption',
+                      _buildCompactFeatureCard(
+                        'File Security',
                         Icons.lock_outlined,
-                        'AES-256 encryption for maximum security',
+                        'X25519 + AES-256',
                         Colors.green,
+                        isDark,
                       ),
-                      _buildFeatureCard(
-                        'Hashing',
+                      _buildCompactFeatureCard(
+                        'Key Management',
+                        Icons.vpn_key,
+                        'Shamir Sharing',
+                        Colors.purple,
+                        isDark,
+                      ),
+                      _buildCompactFeatureCard(
+                        'Hashing Suite',
                         Icons.fingerprint,
-                        'Generate hashes of text using SHA-256, SHA-512, and MD5',
+                        'SHA-1, MD-5,SHA-256',
                         Colors.orange,
+                        isDark,
                       ),
-                      _buildFeatureCard(
+                      _buildCompactFeatureCard(
                         'Cross-Platform',
                         Icons.desktop_windows_outlined,
-                        'Windows, macOS, and Linux support',
+                        'Win/Mac/Linux',
                         Colors.blue,
+                        isDark,
+                      ),
+                      _buildCompactFeatureCard(
+                        'Forensics(Under Development)',
+                        Icons.search,
+                        'Detection Tools',
+                        Colors.red,
+                        isDark,
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 24),
 
-                  // System Info
-                  Container(
-                    width: double.infinity,
-                    decoration: CyberTheme.glassContainer,
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('System Information', style: CyberTheme.heading2),
-                        const SizedBox(height: 24),
-                        _buildSystemInfoItem(
-                          'Version',
-                          '1.0.0 (Build 2024.01)',
+                  Row(
+                    children: [
+                      // System Info
+                      Expanded(
+                        child: Container(
+                          decoration: CyberTheme.glassContainerFor(context),
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('System Information', 
+                                  style: isDark 
+                                      ? CyberTheme.heading3 
+                                      : CyberTheme.heading3.copyWith(color: Colors.black87)),
+                              const SizedBox(height: 16),
+                              _buildSystemInfoItem('Version', '1.0', isDark),
+                              _buildSystemInfoItem('Flutter', '3.24.3', isDark),
+                              _buildSystemInfoItem('Dart', '3.5.3', isDark),
+                              _buildSystemInfoItem('Platform', 'Desktop', isDark),
+                              _buildSystemInfoItem('License', 'Commercial', isDark),
+                              _buildSystemInfoItem('Developer', 'StegoCrypt Team', isDark),
+                            ],
+                          ),
                         ),
-                        _buildSystemInfoItem('Flutter Version', '3.13.0'),
-                        _buildSystemInfoItem('Dart Version', '3.1.0'),
-                        _buildSystemInfoItem('Platform', 'Desktop'),
-                        _buildSystemInfoItem('License', 'MIT Open Source'),
-                        _buildSystemInfoItem(
-                          'Developer',
-                          'Cyber Security Team',
+                      ),
+                      const SizedBox(width: 24),
+                      // Security Features
+                      Expanded(
+                        child: Container(
+                          decoration: CyberTheme.glassContainerFor(context),
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Security Features', 
+                                  style: isDark 
+                                      ? CyberTheme.heading3 
+                                      : CyberTheme.heading3.copyWith(color: Colors.black87)),
+                              const SizedBox(height: 16),
+                              _buildSystemInfoItem('Encryption', 'X25519-KEM + AES-256-GCM', isDark),
+                              _buildSystemInfoItem('Key Derivation', 'Scrypt + HKDF-SHA256', isDark),
+                              _buildSystemInfoItem('Secret Sharing', 'Shamir\'s Algorithm', isDark),
+                              _buildSystemInfoItem('Steganography', 'LSB + DCT + DWT', isDark),
+                              _buildSystemInfoItem('Memory Security', 'Secure Buffer Clearing', isDark),
+                              _buildSystemInfoItem('Quantum Ready', 'Post-Quantum Cryptography', isDark),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // How it works
-                  Container(
-                    width: double.infinity,
-                    decoration: CyberTheme.glassContainer,
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('How It Works', style: CyberTheme.heading2),
-                        const SizedBox(height: 24),
-                        _buildSystemInfoItem(
-                          'Image Steganography',
-                          'Hides data within the least significant bits (LSB) of image pixels, making it visually undetectable.',
-                        ),
-                        _buildSystemInfoItem(
-                          'Audio Steganography',
-                          'Embeds secret messages in audio files by altering the LSB of audio samples. (Coming Soon)',
-                        ),
-                        _buildSystemInfoItem(
-                          'Video Steganography',
-                          'Conceals information within the frames of a video file, using LSB insertion on pixel data. (Coming Soon)',
-                        ),
-                        _buildSystemInfoItem(
-                          'File Encryption',
-                          'Secures files using the Advanced Encryption Standard (AES-256), a symmetric encryption algorithm.',
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 24),
@@ -195,26 +219,30 @@ class AboutPage extends StatelessWidget {
                   // License Info
                   Container(
                     width: double.infinity,
-                    decoration: CyberTheme.glassContainer,
+                    decoration: CyberTheme.glassContainerFor(context),
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('License Information', style: CyberTheme.heading2),
+                        Text('License Agreement', 
+                            style: isDark 
+                                ? CyberTheme.heading2 
+                                : CyberTheme.heading2.copyWith(color: Colors.black87)),
                         const SizedBox(height: 16),
                         Text(
-                          'MIT License\n\n'
-                          'Copyright (c) 2024 StegoCrypt Team\n\n'
-                          'Permission is hereby granted, free of charge, to any person obtaining a copy '
-                          'of this software and associated documentation files (the "Software"), to deal '
-                          'in the Software without restriction, including without limitation the rights '
-                          'to use, copy, modify, merge, publish, distribute, sublicense, and/or sell '
-                          'copies of the Software, and to permit persons to whom the Software is '
-                          'furnished to do so, subject to the following conditions:\n\n'
-                          'The above copyright notice and this permission notice shall be included in all '
-                          'copies or substantial portions of the Software.',
-                          style: CyberTheme.bodyMedium.copyWith(
-                            color: CyberTheme.softGray,
+                          'Commercial Software License\n\n'
+                          'Copyright © 2024 CyberSec Labs. All Rights Reserved.\n\n'
+                          'This software is proprietary and confidential. Unauthorized copying, distribution, '
+                          'modification, public display, or public performance of this software is strictly prohibited. '
+                          'This software is licensed, not sold. By using this software, you agree to the terms '
+                          'and conditions of the End User License Agreement (EULA).\n\n'
+                          'The software contains trade secrets and proprietary information of CyberSec Labs. '
+                          'Any unauthorized use, reproduction, or distribution may result in severe civil and '
+                          'criminal penalties, and will be prosecuted to the maximum extent possible under law.\n\n'
+                          'For licensing inquiries, contact: licensing@cyberseclabs.com',
+                          style: CyberTheme.bodySmall.copyWith(
+                            color: isDark ? CyberTheme.softGray : Colors.black54,
+                            height: 1.4,
                           ),
                         ),
                       ],
@@ -223,6 +251,61 @@ class AboutPage extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactFeatureCard(
+    String title,
+    IconData icon,
+    String subtitle,
+    Color color,
+    bool isDark,
+  ) {
+    return Container(
+      decoration: CyberTheme.glassContainer.copyWith(
+        color: isDark 
+            ? CyberTheme.glassContainer.color
+            : Colors.white.withOpacity(0.8),
+        border: isDark 
+            ? CyberTheme.glassContainer.border
+            : Border.all(color: Colors.black.withOpacity(0.1)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color.withOpacity(isDark ? 0.2 : 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 18, color: color),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: CyberTheme.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: CyberTheme.bodySmall.copyWith(
+              color: isDark ? CyberTheme.softGray : Colors.black54,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -259,12 +342,15 @@ class AboutPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSystemInfoItem(String label, String value) {
+  Widget _buildSystemInfoItem(String label, String value, bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: CyberTheme.glowWhite.withOpacity(0.1)),
+          bottom: BorderSide(
+              color: isDark 
+                  ? CyberTheme.glowWhite.withOpacity(0.1)
+                  : Colors.black.withOpacity(0.1)),
         ),
       ),
       child: Row(
@@ -272,10 +358,20 @@ class AboutPage extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: CyberTheme.bodyMedium.copyWith(color: CyberTheme.softGray),
+              style: CyberTheme.bodySmall.copyWith(
+                  color: isDark ? CyberTheme.softGray : Colors.black54),
             ),
           ),
-          Text(value, style: CyberTheme.bodyMedium),
+          Expanded(
+            child: Text(
+              value,
+              style: CyberTheme.bodySmall.copyWith(
+                fontWeight: FontWeight.w500,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
         ],
       ),
     );

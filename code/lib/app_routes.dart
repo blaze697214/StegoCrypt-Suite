@@ -9,6 +9,7 @@ import 'encrypt_page.dart';
 import 'decrypt_page.dart';
 import 'hashing_page.dart';
 import 'about_page.dart';
+import 'file_security_page.dart';
 
 class AppRoutes {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -29,6 +30,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const DecryptPage());
       case '/hashing':
         return MaterialPageRoute(builder: (_) => const HashingPage());
+      case '/file-security':
+        return MaterialPageRoute(builder: (_) => const FileSecurityPage());
       case '/about':
         return MaterialPageRoute(builder: (_) => const AboutPage());
       default:

@@ -1,0 +1,49 @@
+What is Flutter?
+Flutter is an open source framework developed and supported by Google. Frontend and full-stack developers use Flutter to build an application’s user interface (UI) for multiple platforms with a single codebase.
+
+When Flutter launched in 2018, it mainly supported mobile app development. Flutter now supports application development on six platforms: iOS, Android, the web, Windows, MacOS, and Linux.
+
+How does Flutter help app development?
+Flutter simplifies the process of creating consistent, appealing UIs for an application across the six platforms it supports.
+
+Because Flutter is a cross-platform development framework, we’ll first compare it to native development. Then, we can highlight features that are unique to Flutter.
+
+Native app development compared to cross-platform app development
+Coding an application for one specific platform, such as iOS, is called native app development. By contrast, cross-platform app development is building an application for multiple platforms with a single codebase.
+
+Native app development
+Because developers code for a specific platform in native app development, they have full access to native device functionality. This generally leads to higher performance and speed compared to cross-platform app development.
+
+On the other hand, if you want to launch an application on multiple platforms, native app development requires more code and more developers. In addition to these expenses, native app development can make it harder to launch on different platforms at the same time with a consistent user experience. This is where cross-platform app development frameworks like Flutter can be useful.
+
+Cross-platform app development
+Cross-platform app development allows developers to use one programming language and one codebase to build an application for multiple platforms. If you’re releasing an application for multiple platforms, cross-platform app development is less costly and time-consuming than native app development.
+
+This process also lets developers create a more consistent experience for users across platforms.
+
+This approach can have drawbacks compared to native app development, including limited access to native device functionality. However, Flutter has features that make cross-platform app development smoother and highly performant.
+
+The advantages of Flutter
+Here are some ways that Flutter stands out as a cross-platform development framework:
+
+Close-to-native performance. Flutter uses the programming language Dart and compiles into machine code. Host devices understand this code, which ensures a fast and effective performance.
+Fast, consistent, and customizable rendering. Instead of relying on platform-specific rendering tools, Flutter uses Google’s open-source Skia graphic library to render UI. This provides users with consistent visuals no matter what platform they use to access an application. 
+Developer-friendly tools. Google built Flutter with an emphasis on ease-of-use. With tools like hot reload, developers can preview what code changes will look like without losing state. Other tools like the widget inspector make it easy to visualize and solve issues with UI layouts.
+What programming language does Flutter use?
+Flutter uses the open-source programming language Dart, which was also developed by Google. Dart is optimized for building UIs, and many of Dart’s strengths are used in Flutter.
+
+For example, one feature of Dart used in Flutter is sound null safety. Dart’s sound null safety makes it easier to detect common bugs called null errors. This feature reduces the time developers spend on code maintenance and gives them more time to focus on building their applications.
+
+What are widgets in Flutter?
+In Flutter, developers build UI layouts by using widgets. This means everything a user sees on a screen, from windows and panels to buttons and text, are made of widgets.
+
+Flutter widgets are designed so developers can easily customize them. Flutter achieves this through a composition approach. This means most widgets are made up of smaller widgets, and the most basic widgets have specific purposes. This allows developers to combine or edit widgets to create new ones.
+
+Flutter renders widgets using its own graphic engine instead of relying on a platform’s built-in widgets. This way, users will experience a similar look and feel in a Flutter application across platforms. This approach also provides flexibility to developers, because some Flutter widgets can carry out functions that platform-specific widgets can’t.
+
+Flutter also makes it easy to use community-developed widgets. Flutter’s architecture supports having multiple widget libraries, and Flutter encourages the community to build and maintain new ones.
+
+Types of Flutter widgets
+Flutter comes with an extensive widget catalog from the time you download it. The catalog has 14 categories, which include styling, Cupertino (iOS-style widgets), and Material Components (widgets that follow Google's Material Design guidelines).
+
+Flutter also comes with layouts and themes included, helping developers to build right away.

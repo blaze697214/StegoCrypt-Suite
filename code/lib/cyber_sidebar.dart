@@ -173,6 +173,18 @@ class _CyberSidebarState extends State<CyberSidebar>
                   ],
                   appProvider),
               _buildNavGroup(
+                  'File Security',
+                  'file-security',
+                  [
+                    NavItem(
+                      '/file-security',
+                      'File Security',
+                      Icons.security,
+                      false,
+                    ),
+                  ],
+                  appProvider),
+              _buildNavGroup(
                   'Hashing',
                   'hashing',
                   [
@@ -204,7 +216,7 @@ class _CyberSidebarState extends State<CyberSidebar>
     List<NavItem> items,
     AppProvider appProvider,
   ) {
-    final bool isExpandable = items.length > 5;
+    final bool isExpandable = items.length > 3 ;
     final bool isExpanded = _expandedGroup == groupId;
 
     return Container(

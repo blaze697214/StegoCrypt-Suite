@@ -12,7 +12,7 @@ import sys
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "Backend"))
 
-from cryptography.aes_crypto import (
+from local_crypto.aes_crypto import (
     get_key_from_password,
     save_aes_key,
     load_aes_key,
@@ -20,7 +20,7 @@ from cryptography.aes_crypto import (
     encrypt_aes,
     decrypt_aes
 )
-from cryptography.rsa_crypto import (
+from local_crypto.rsa_crypto import (
     generate_and_save_keys,
     load_keys,
     encrypt_rsa,

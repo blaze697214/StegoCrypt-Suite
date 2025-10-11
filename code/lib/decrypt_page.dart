@@ -387,10 +387,14 @@ class _DecryptPageState extends State<DecryptPage> {
   }
 
   Widget _buildRsaKeyManagementSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('RSA Key Management', style: CyberTheme.heading3),
+        Text('RSA Key Management', 
+            style: isDark 
+                ? CyberTheme.heading3 
+                : CyberTheme.heading3.copyWith(color: Colors.black87)),
         const SizedBox(height: 16),
         Center(
           child: CyberButton(

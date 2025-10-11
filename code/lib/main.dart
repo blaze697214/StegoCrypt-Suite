@@ -2,7 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:window_manager/window_manager.dart';
+// import 'package:window_manager/window_manager.dart'; // Removed for Windows build compatibility
+import 'dart:convert';
+import 'dart:io';
+import 'package:path/path.dart' as p;
 import 'auth_page.dart';
 import 'cyber_theme.dart';
 import 'app_routes.dart';
@@ -13,34 +16,17 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Window management disabled for Windows build compatibility
   // Configure window for desktop only (skip web and mobile)
-  final bool isDesktop = !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.windows ||
-          defaultTargetPlatform == TargetPlatform.linux ||
-          defaultTargetPlatform == TargetPlatform.macOS);
+  // final bool isDesktop = !kIsWeb &&
+  //     (defaultTargetPlatform == TargetPlatform.windows ||
+  //         defaultTargetPlatform == TargetPlatform.linux ||
+  //         defaultTargetPlatform == TargetPlatform.macOS);
 
-  if (isDesktop) {
-    await windowManager.ensureInitialized();
-
-    const WindowOptions windowOptions = WindowOptions(
-      size: Size(1920, 1080), // Full HD size
-      center: true,
-      backgroundColor: const Color(0xFF0A0A0A), // Dark background to match cyber theme
-      skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.normal, // Show native title bar with OS controls
-      minimumSize: Size(1200, 800),
-      maximumSize: Size(1920, 1080),
-      windowButtonVisibility: true, // Show native window buttons
-      title: 'StegoCrypt Suite', // App title in title bar
-    );
-
-    windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.show();
-      await windowManager.focus();
-      // Open maximized by default
-      await windowManager.maximize();
-    });
-  }
+  // if (isDesktop) {
+  //   await windowManager.ensureInitialized();
+  //   // Window configuration code removed for compatibility
+  // }
 
   final prefs = await SharedPreferences.getInstance();
   final isPasswordSet = prefs.containsKey('password');
@@ -48,10 +34,65 @@ void main() async {
   runApp(StegoCryptApp(isPasswordSet: isPasswordSet));
 }
 
-class StegoCryptApp extends StatelessWidget {
+class StegoCryptApp extends StatefulWidget {
   final bool isPasswordSet;
 
   const StegoCryptApp({super.key, required this.isPasswordSet});
+
+  @override
+  State<StegoCryptApp> createState() => _StegoCryptAppState();
+}
+
+class _StegoCryptAppState extends State<StegoCryptApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _clearBackendStateOnStart();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _clearBackendStateOnExit();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.detached) {
+      _clearBackendStateOnExit();
+    }
+  }
+
+  Future<void> _clearBackendStateOnStart() async {
+    try {
+      // Clear state file when app starts
+      final baseDir = Directory.current.path;
+      final stateFile = File(p.join(baseDir, 'backend', '.keymanager_state.json'));
+      if (await stateFile.exists()) {
+        await stateFile.delete();
+        print('DEBUG - State file cleared on app start');
+      }
+    } catch (e) {
+      print('DEBUG - Failed to clear state file on start: $e');
+    }
+  }
+
+  Future<void> _clearBackendStateOnExit() async {
+    try {
+      // Clear state file when app exits
+      final baseDir = Directory.current.path;
+      final stateFile = File(p.join(baseDir, 'backend', '.keymanager_state.json'));
+      if (await stateFile.exists()) {
+        await stateFile.delete();
+        print('DEBUG - State file cleared on app exit');
+      }
+    } catch (e) {
+      print('DEBUG - Failed to clear state file on exit: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +107,7 @@ class StegoCryptApp extends StatelessWidget {
             darkTheme: CyberTheme.darkTheme,
             themeMode: appProvider.themeMode,
             debugShowCheckedModeBanner: false,
-            home: isPasswordSet ? const AuthPage() : const AuthPage(),
+            home: widget.isPasswordSet ? const AuthPage() : const AuthPage(),
             onGenerateRoute: AppRoutes.generateRoute,
           );
         },

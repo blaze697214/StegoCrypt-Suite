@@ -14,6 +14,7 @@ import 'encrypt_page.dart';
 import 'decrypt_page.dart';
 import 'hashing_page.dart';
 import 'about_page.dart';
+import 'file_security_page.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -154,6 +155,8 @@ class _MainLayoutState extends State<MainLayout> with TickerProviderStateMixin {
         return const EncryptPage();
       case '/decrypt':
         return const DecryptPage();
+      case '/file-security':
+        return const FileSecurityPage();
       case '/hashing':
         return const HashingPage();
       case '/about':

@@ -7,6 +7,7 @@ Direct process communication interface for Flutter frontend
 import os
 import sys
 import json
+import hashlib
 
 # Set stdout and stderr to utf-8
 if sys.stdout.encoding != 'utf-8':
@@ -37,9 +38,9 @@ from steganography.text_stego import (
 )
 from hashing import hash_message, verify_hash, get_supported_algorithms
 from logs import log_operation, get_logs, get_log_stats
-from cryptography.aes_crypto import encrypt_aes, decrypt_aes, get_key_from_password
+from local_crypto.aes_crypto import encrypt_aes, decrypt_aes, get_key_from_password
 from Crypto.Protocol.KDF import PBKDF2
-from cryptography.rsa_crypto import (
+from local_crypto.rsa_crypto import (
     generate_rsa_keys,
     encrypt_with_rsa,
     decrypt_with_rsa,
@@ -49,6 +50,139 @@ from cryptography.rsa_crypto import (
 )
 from validation.inputs import non_empty_string
 from validation.errors import ValidationError
+
+STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.keymanager_state.json')
+
+def save_key_manager_state(km):
+    """Save KeyManager state to disk using JSON"""
+    try:
+        # Import SecureBuffer if needed
+        from file_security.file_security import SecureBuffer
+        
+        state = {
+            'public_key': base64.b64encode(km.public_key).decode('utf-8') if km.public_key else None,
+            'public_fingerprint': km.public_fingerprint,
+            'private_keys': {k: base64.b64encode(v.to_bytes()).decode('utf-8') for k, v in km.private_keys.items()},
+            'private_fingerprints': km.private_fingerprints
+        }
+        with open(STATE_FILE, 'w') as f:
+            json.dump(state, f, indent=2)
+        print(f"DEBUG - State saved: {len(state['private_keys'])} private keys, public_key: {km.public_key is not None}", file=sys.stderr)
+    except Exception as e:
+        print(f"DEBUG - Failed to save state: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+
+def load_key_manager_state(km):
+    """Load KeyManager state from disk using JSON"""
+    try:
+        if os.path.exists(STATE_FILE):
+            from file_security.file_security import SecureBuffer
+            
+            with open(STATE_FILE, 'r') as f:
+                state = json.load(f)
+            
+            km.public_key = base64.b64decode(state['public_key'].encode('utf-8')) if state.get('public_key') else None
+            km.public_fingerprint = state.get('public_fingerprint')
+            km.private_fingerprints = state.get('private_fingerprints', {})
+            
+            # Restore SecureBuffers
+            for key_id, key_b64 in state.get('private_keys', {}).items():
+                key_bytes = base64.b64decode(key_b64.encode('utf-8'))
+                km.private_keys[key_id] = SecureBuffer.from_bytes(key_bytes)
+            
+            print(f"DEBUG - State loaded: {len(km.private_keys)} private keys, public_key: {km.public_key is not None}", file=sys.stderr)
+            return True
+    except Exception as e:
+        print(f"DEBUG - Failed to load state: {e}", file=sys.stderr)
+        # Clear corrupted state file
+        try:
+            if os.path.exists(STATE_FILE):
+                os.remove(STATE_FILE)
+        except:
+            pass
+    return False
+
+def clear_key_manager_state():
+    """Clear persisted state (call on app start)"""
+    try:
+        if os.path.exists(STATE_FILE):
+            os.remove(STATE_FILE)
+            print("DEBUG - State file cleared", file=sys.stderr)
+    except Exception as e:
+        print(f"DEBUG - Failed to clear state: {e}", file=sys.stderr)
+
+# Lazily initialize the file security backend to avoid heavy imports or side-effects
+# at module import time (these caused the project to fail when importing this module).
+file_security_manager = None
+
+# Global singleton instance that persists across CLI calls
+_key_manager_instance = None
+
+def get_key_manager():
+    """Return a persistent KeyManager singleton instance"""
+    global _key_manager_instance
+    
+    if _key_manager_instance is None:
+        try:
+            from file_security.file_security import KeyManager
+            _key_manager_instance = KeyManager()
+            # Try to load existing state
+            load_key_manager_state(_key_manager_instance)
+            print("DEBUG - KeyManager created successfully", file=sys.stderr)
+        except ImportError as e:
+            error_message = f"KeyManager import failed: {str(e)}"
+            class _MissingKeyManager:
+                def __getattr__(self, name):
+                    raise RuntimeError(f"Key manager unavailable: {error_message}")
+            _key_manager_instance = _MissingKeyManager()
+        except Exception as e:
+            error_message = f"KeyManager initialization failed: {str(e)}"
+            class _MissingKeyManager:
+                def __getattr__(self, name):
+                    raise RuntimeError(f"Key manager unavailable: {error_message}")
+            _key_manager_instance = _MissingKeyManager()
+    else:
+        print(f"DEBUG - Using existing KeyManager (has {len(getattr(_key_manager_instance, 'private_keys', {}))} private keys)", file=sys.stderr)
+    
+    return _key_manager_instance
+
+def get_file_security_manager():
+    """Return a lazily-instantiated X25519FileEncryption instance.
+
+    If the underlying backend cannot be imported/initialized, a stub object
+    is returned that raises a clear RuntimeError when any attribute is used.
+    This prevents import-time failures while still providing informative
+    errors when file-security operations are attempted.
+    """
+    global file_security_manager
+    if file_security_manager is None:
+        try:
+            from file_security.file_security import X25519FileEncryption
+            file_security_manager = X25519FileEncryption()
+        except BaseException as e:
+            # Some modules (e.g., file_security) call sys.exit() on missing
+            # dependencies which raises SystemExit (not Exception). Catch
+            # BaseException so we can return an informative stub instead of
+            # letting the import terminate the process.
+            # Try to detect a missing-cryptography situation and surface a
+            # helpful message to the caller.
+            detected_msg = None
+            try:
+                # quick probe for the cryptography package
+                import cryptography.hazmat.primitives  # type: ignore
+            except Exception as probe_e:
+                detected_msg = f"Missing dependency: {probe_e}. Install with: pip install cryptography"
+            if not detected_msg:
+                detected_msg = str(e)
+
+            class _MissingFileSecurity:
+                def __getattr__(self, name):
+                    raise RuntimeError(f"File security backend unavailable: {detected_msg}")
+
+            file_security_manager = _MissingFileSecurity()
+    return file_security_manager
+    
 
 def encrypt_message(message: str, method: str, password: Optional[str] = None) -> str:
     """Encrypt message using specified method"""
@@ -497,6 +631,294 @@ def process_rsa_command(args):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+def process_file_security_command(args):
+    """Process file security commands using KeyManager"""
+    try:
+        action = args.fs_command
+        km = get_key_manager()
+        
+        # Test if KeyManager is available
+        try:
+            _ = getattr(km, 'get_key_info', None)
+        except RuntimeError as re:
+            return {"status": "error", "message": str(re)}
+
+        if action == "generate-keypair":
+            try:
+                public_key_b64, private_key_id, fingerprint = km.generate_keypair()
+                print(f"DEBUG - Keypair generated successfully. Key ID: {private_key_id}", file=sys.stderr)
+                print(f"DEBUG - Fingerprint: {fingerprint}", file=sys.stderr)
+                
+                save_key_manager_state(km)
+
+                return {
+                    "status": "success",
+                    "message": "Keypair generated successfully",
+                    "publicKey": public_key_b64,
+                    "privateKeyId": private_key_id,
+                    "fingerprint": fingerprint
+                }
+            except Exception as e:
+                return {"status": "error", "message": f"Failed to generate keypair: {str(e)}"}
+        
+        elif action == "load-public-key":
+            try:
+                with open(args.file_path, 'rb') as f:
+                    public_key = f.read()
+                fingerprint = km.load_public_key(public_key)
+                save_key_manager_state(km)
+                return {
+                    "status": "success",
+                    "message": "Public key loaded successfully",
+                    "fingerprint": fingerprint,
+                    "publicKey": base64.b64encode(public_key).decode('utf-8'),
+                }
+            except Exception as e:
+                return {"status": "error", "message": f"Failed to load public key: {str(e)}"}
+
+        elif action == "load-private-key":
+            try:
+                with open(args.file_path, 'rb') as f:
+                    key_data = f.read()
+                password = args.password if hasattr(args, 'password') else None
+                key_id, fingerprint = km.load_private_key(key_data, password)
+                print(f"DEBUG - Private key loaded: ID={key_id}, fingerprint={fingerprint}", file=sys.stderr)
+                print(f"DEBUG - Keys in memory after load: {len(km.private_keys)}", file=sys.stderr)
+                save_key_manager_state(km)
+                return {
+                    "status": "success",
+                    "message": f"Private key loaded successfully. Key ID: {key_id}",
+                    "privateKeyId": key_id,
+                    "fingerprint": fingerprint,
+                    "keysInMemory": len(km.private_keys)
+                }
+            except Exception as e:
+                print(f"DEBUG - Failed to load private key: {str(e)}", file=sys.stderr)
+                return {"status": "error", "message": f"Failed to load private key: {str(e)}"}
+
+        elif action == "export-public-key":
+            try:
+                public_key_data = km.export_public_key()
+                output_dir = os.path.dirname(args.file_path)
+                if output_dir and not os.path.exists(output_dir):
+                    os.makedirs(output_dir, exist_ok=True)
+                with open(args.file_path, 'wb') as f:
+                    f.write(public_key_data)
+                if not os.path.exists(args.file_path) or os.path.getsize(args.file_path) == 0:
+                    return {"status": "error", "message": "Failed to write public key file"}
+                return {
+                    "status": "success",
+                    "message": f"Public key exported to {args.file_path}",
+                    "file_size": len(public_key_data)
+                }
+            except Exception as e:
+                return {"status": "error", "message": f"Failed to export public key: {str(e)}"}
+
+        elif action == "export-private-key":
+            try:
+                key_id = args.key_id
+                password = args.password if hasattr(args, 'password') and args.password else None
+                print(f"DEBUG - Attempting to export private key: {key_id}", file=sys.stderr)
+                print(f"DEBUG - Available keys: {list(km.private_keys.keys())}", file=sys.stderr)
+                print(f"DEBUG - Keys in memory: {len(km.private_keys)}", file=sys.stderr)
+                key_data = km.export_private_key(key_id, password)
+                output_dir = os.path.dirname(args.file_path)
+                if output_dir and not os.path.exists(output_dir):
+                    os.makedirs(output_dir, exist_ok=True)
+                with open(args.file_path, 'wb') as f:
+                    f.write(key_data)
+                if not os.path.exists(args.file_path) or os.path.getsize(args.file_path) == 0:
+                    return {"status": "error", "message": "Failed to write private key file"}
+                print(f"DEBUG - Private key exported successfully to {args.file_path}", file=sys.stderr)
+                return {
+                    "status": "success",
+                    "message": f"Private key exported to {args.file_path}",
+                    "file_size": len(key_data)
+                }
+            except Exception as e:
+                print(f"DEBUG - Export private key failed: {str(e)}", file=sys.stderr)
+                return {"status": "error", "message": f"Failed to export private key: {str(e)}"}
+
+        elif action == "split-key":
+            try:
+                key_id = args.key_id
+                print(f"DEBUG - Attempting to split key: {key_id}", file=sys.stderr)
+                print(f"DEBUG - Available keys: {list(km.private_keys.keys())}", file=sys.stderr)
+                print(f"DEBUG - Keys in memory: {len(km.private_keys)}", file=sys.stderr)
+                shares = km.split_key(key_id, args.password, args.threshold, args.shares)
+                
+                # Use provided output directory or default to backend directory
+                output_dir = getattr(args, 'output_dir', None)
+                if not output_dir:
+                    output_dir = os.path.dirname(os.path.abspath(__file__))
+                
+                # Ensure output directory exists
+                os.makedirs(output_dir, exist_ok=True)
+                
+                share_files = []
+                for i, share in enumerate(shares, 1):
+                    share_file = os.path.join(output_dir, f"{args.base_name}_share_{i:02d}.sss")
+                    with open(share_file, 'wb') as f:
+                        f.write(share)
+                    share_files.append(share_file)
+                print(f"DEBUG - Key split successfully into {len(shares)} shares in {output_dir}", file=sys.stderr)
+                return {
+                    "status": "success",
+                    "message": f"Key split into {len(shares)} shares successfully",
+                    "shareFiles": share_files,
+                    "outputDirectory": output_dir
+                }
+            except Exception as e:
+                print(f"DEBUG - Split key failed: {str(e)}", file=sys.stderr)
+                return {"status": "error", "message": f"Failed to split key: {str(e)}"}
+
+        elif action == "reconstruct-key":
+            try:
+                share_files_str = args.share_files
+                share_files_list = json.loads(share_files_str)
+                shares = []
+                for file_path in share_files_list:
+                    with open(file_path, 'rb') as f:
+                        shares.append(f.read())
+                key_id, fingerprint = km.reconstruct_key(shares, args.password)
+                save_key_manager_state(km)
+                return {
+                    "status": "success",
+                    "message": "Key reconstructed successfully",
+                    "privateKeyId": key_id,
+                    "fingerprint": fingerprint
+                }
+            except Exception as e:
+                return {"status": "error", "message": f"Reconstruction failed: {str(e)}"}
+
+        elif action == "encrypt-file":
+            try:
+                public_key = base64.b64decode(args.key)
+                if len(public_key) != 32:
+                    return {
+                        "status": "error",
+                        "message": f"Invalid public key length: {len(public_key)} bytes (expected 32)"
+                    }
+                original_public_key = km.public_key
+                km.public_key = public_key
+                try:
+                    # Get original filename for metadata
+                    original_filename = getattr(args, 'original_filename', None)
+                    if not original_filename:
+                        original_filename = os.path.basename(args.input_file)
+                    
+                    fingerprint = km.encrypt_file(args.input_file, args.output_file, original_filename)
+                    return {
+                        "status": "success",
+                        "message": "File encrypted successfully",
+                        "fingerprint": fingerprint,
+                        "filename": os.path.basename(args.output_file)
+                    }
+                finally:
+                    km.public_key = original_public_key
+            except Exception as e:
+                return {"status": "error", "message": f"Encryption failed: {str(e)}"}
+
+        elif action == "decrypt-file":
+            try:
+                key_id = args.key_id
+                success = km.decrypt_file(args.input_file, args.output_file, key_id)
+                if success:
+                    return {
+                        "status": "success",
+                        "message": "File decrypted successfully",
+                        "filename": os.path.basename(args.output_file)
+                    }
+                else:
+                    return {"status": "error", "message": "File decryption failed."}
+            except Exception as e:
+                return {"status": "error", "message": f"Decryption failed: {str(e)}"}
+
+        elif action == "view-key-info":
+            try:
+                info = km.get_key_info()
+                print(f"DEBUG - view-key-info called", file=sys.stderr)
+                print(f"DEBUG - Public key loaded: {info['publicKeyLoaded']}", file=sys.stderr)
+                print(f"DEBUG - Private keys in memory: {info['privateKeysInMemory']}", file=sys.stderr)
+                print(f"DEBUG - Available key IDs: {info['privateKeyIds']}", file=sys.stderr)
+                print(f"DEBUG - KeyManager instance ID: {id(km)}", file=sys.stderr)
+                print(f"DEBUG - Private keys dict size: {len(km.private_keys)}", file=sys.stderr)
+                
+                return {
+                    "status": "success",
+                    "publicKeyLoaded": info["publicKeyLoaded"],
+                    "publicKeyFingerprint": info["publicKeyFingerprint"],
+                    "privateKeyLoaded": info["privateKeysInMemory"] > 0,
+                    "privateKeyFingerprint": list(info["privateKeyFingerprints"].values())[0] if info["privateKeyFingerprints"] else None,
+                    "detailedInfo": info
+                }
+            except Exception as e:
+                print(f"DEBUG - view-key-info error: {str(e)}", file=sys.stderr)
+                return {"status": "error", "message": f"Failed to get key info: {str(e)}"}
+        elif action == "configure-settings":
+            try:
+                chunk_size = getattr(args, 'chunk_size', None)
+                kdf_strength = getattr(args, 'kdf_strength', None)
+                km.configure_settings(chunk_size, kdf_strength)
+                return {"status": "success", "message": "Settings updated."}
+            except Exception as e:
+                return {"status": "error", "message": f"Failed to update settings: {str(e)}"}
+        
+        elif action == "get-settings":
+            try:
+                settings_info = {
+                    "chunkSize": km.settings.chunk_size,
+                    "chunkSizeMB": km.settings.chunk_size // (1024 * 1024),
+                    "kdfStrength": km.settings.get_kdf_strength_level().lower(),
+                    "scryptN": km.settings.scrypt_n,
+                    "scryptR": km.settings.scrypt_r,
+                    "scryptP": km.settings.scrypt_p,
+                    "algorithm": km.crypto.kem_algo,
+                    "encryption": "AES-256-GCM",
+                    "keyDerivation": "HKDF-SHA256"
+                }
+                return {"status": "success", "settings": settings_info}
+            except Exception as e:
+                return {"status": "error", "message": f"Failed to get settings: {str(e)}"}
+        elif action == "get-metadata":
+            try:
+                from file_security.file_security import X25519FileEncryption
+                metadata = X25519FileEncryption.read_file_metadata(args.file_path)
+                return {
+                    "status": "success",
+                    "metadata": metadata,
+                    "originalFilename": metadata.get('original_filename', None)
+                }
+            except Exception as e:
+                return {"status": "error", "message": f"Failed to read metadata: {str(e)}"}
+
+        elif action == "clear-state":
+            try:
+                clear_key_manager_state()
+                
+                # Also clear current KeyManager instance
+                global _key_manager_instance
+                if _key_manager_instance is not None:
+                    # Wipe private keys
+                    for key_id, key in list(km.private_keys.items()):
+                        key.wipe()
+                    km.private_keys.clear()
+                    km.public_key = None
+                    km.public_fingerprint = None
+                    km.private_fingerprints.clear()
+                    # Reset the singleton
+                    _key_manager_instance = None
+                
+                return {"status": "success", "message": "Key state cleared"}
+            except Exception as e:
+                return {"status": "error", "message": f"Failed to clear state: {str(e)}"}
+
+        else:
+            return {"status": "error", "message": f"Unknown file security command: {action}"}
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 def main():
     parser = argparse.ArgumentParser(description='StegoCrypt Suite CLI')
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
@@ -600,7 +1022,63 @@ def main():
 
     rsa_decrypt_parser = rsa_subparsers.add_parser('decrypt', help='Decrypt a message with RSA')
     rsa_decrypt_parser.add_argument('--ciphertext', required=True, help='Ciphertext to decrypt')
+
+    # File Security
+    fs_parser = subparsers.add_parser('file-security', help='File encryption and key management')
+    fs_subparsers = fs_parser.add_subparsers(dest='fs_command', help='File security commands')
+
+    fs_subparsers.add_parser('generate-keypair', help='Generate X25519 key pair')
     
+    fs_load_pub_parser = fs_subparsers.add_parser('load-public-key', help='Load a public key from file')
+    fs_load_pub_parser.add_argument('--file-path', required=True)
+
+    fs_load_priv_parser = fs_subparsers.add_parser('load-private-key', help='Load a private key from file')
+    fs_load_priv_parser.add_argument('--file-path', required=True)
+    fs_load_priv_parser.add_argument('--password', required=False)
+
+    fs_export_pub_parser = fs_subparsers.add_parser('export-public-key', help='Export public key to file')
+    fs_export_pub_parser.add_argument('--file-path', required=True)
+
+    fs_export_priv_parser = fs_subparsers.add_parser('export-private-key', help='Export private key to file')
+    fs_export_priv_parser.add_argument('--key-id', required=True)
+    fs_export_priv_parser.add_argument('--file-path', required=True)
+    fs_export_priv_parser.add_argument('--password', required=False)
+
+    fs_split_parser = fs_subparsers.add_parser('split-key', help='Split a private key into shares')
+    fs_split_parser.add_argument('--key-id', required=True)
+    fs_split_parser.add_argument('--password', required=True)
+    fs_split_parser.add_argument('--threshold', required=True, type=int)
+    fs_split_parser.add_argument('--shares', required=True, type=int)
+    fs_split_parser.add_argument('--base-name', required=True)
+    fs_split_parser.add_argument('--output-dir', required=False, help='Directory to save share files')
+
+    fs_reconstruct_parser = fs_subparsers.add_parser('reconstruct-key', help='Reconstruct a private key from shares')
+    fs_reconstruct_parser.add_argument('--share-files', required=True, help='JSON encoded list of share file paths')
+    fs_reconstruct_parser.add_argument('--password', required=True)
+
+    fs_encrypt_parser = fs_subparsers.add_parser('encrypt-file', help='Encrypt a file')
+    fs_encrypt_parser.add_argument('--input-file', required=True)
+    fs_encrypt_parser.add_argument('--output-file', required=True)
+    fs_encrypt_parser.add_argument('--key', required=True, help='Base64 encoded public key')
+    fs_encrypt_parser.add_argument('--original-filename', required=False, help='Original filename to store in metadata')
+
+    fs_decrypt_parser = fs_subparsers.add_parser('decrypt-file', help='Decrypt a file')
+    fs_decrypt_parser.add_argument('--input-file', required=True)
+    fs_decrypt_parser.add_argument('--output-file', required=True)
+    fs_decrypt_parser.add_argument('--key-id', required=True)
+
+    fs_metadata_parser = fs_subparsers.add_parser('get-metadata', help='Get metadata from encrypted file')
+    fs_metadata_parser.add_argument('--file-path', required=True)
+
+    fs_subparsers.add_parser('view-key-info', help='View loaded key information')
+
+    fs_config_parser = fs_subparsers.add_parser('configure-settings', help='Configure security settings')
+    fs_config_parser.add_argument('--chunk-size', type=int)
+    fs_config_parser.add_argument('--kdf-strength', choices=['low', 'medium', 'high', 'maximum'])
+    
+    fs_subparsers.add_parser('get-settings', help='Get current security settings')
+    # Add this new subparser
+    fs_clear_parser = fs_subparsers.add_parser('clear-state', help='Clear persisted key state')
     args = parser.parse_args()
     
     if not args.command:
@@ -641,6 +1119,8 @@ def main():
             result = process_get_log_stats(args)
         elif args.command == 'rsa':
             result = process_rsa_command(args)
+        elif args.command == 'file-security':
+            result = process_file_security_command(args)
         else:
             result = {"status": "error", "message": f"Unknown command: {args.command}"}
         

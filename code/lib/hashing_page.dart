@@ -66,11 +66,15 @@ class _HashingPageState extends State<HashingPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Hashing', style: CyberTheme.heading1),
+          Text('Hashing', 
+              style: isDark 
+                  ? CyberTheme.heading1 
+                  : CyberTheme.heading1.copyWith(color: Colors.black87)),
           const SizedBox(height: 8),
           Text(
             'Generate a hash of a message using various algorithms',
-            style: CyberTheme.bodyLarge.copyWith(color: CyberTheme.softGray),
+            style: CyberTheme.bodyLarge.copyWith(
+                color: isDark ? CyberTheme.softGray : Colors.black54),
           ),
           const SizedBox(height: 32),
           Container(
@@ -126,9 +130,11 @@ class _HashingPageState extends State<HashingPage> {
             ),
           ),
           const SizedBox(height: 16),
-          CyberButton(
-            text: 'Generate Hash',
-            onPressed: _generateHash,
+          Center(
+            child: CyberButton(
+              text: 'Generate Hash',
+              onPressed: _generateHash,
+            ),
           ),
           const SizedBox(height: 32),
           if (_isEncrypting)
