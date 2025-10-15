@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StegoCrypt Suite - Documentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #ffffff;
+            color: #1a1a1a;
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            height: 70px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+            text-decoration: none;
+        }
+
+        .logo-img {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+        }
+
+        .nav-link {
+            color: #4b5563;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: #2563eb;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 32px;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #1a1a1a;
+            margin-bottom: 24px;
+            letter-spacing: -0.025em;
+            line-height: 1.1;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: #6b7280;
+            margin-bottom: 40px;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        /* Documentation Section */
+        .section {
+            padding: 80px 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 64px;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+            letter-spacing: -0.025em;
+        }
+
+        .section-description {
+            font-size: 1.125rem;
+            color: #6b7280;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .docs-container {
+            display: flex;
+            gap: 32px;
+        }
+
+        .docs-sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 100px;
+            align-self: flex-start;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px;
+            height: fit-content;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+
+        .docs-nav {
+            list-style: none;
+        }
+
+        .docs-nav-item {
+            margin-bottom: 8px;
+        }
+
+        .docs-nav-link {
+            display: block;
+            padding: 12px 16px;
+            color: #4b5563;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+
+        .docs-nav-link:hover, .docs-nav-link.active {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .docs-content {
+            flex: 1;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 40px;
+        }
+
+        .docs-section {
+            margin-bottom: 48px;
+            scroll-margin-top: 120px;
+        }
+
+        .docs-section-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .docs-section-content {
+            color: #4b5563;
+        }
+
+        .docs-section-content h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 24px 0 12px;
+        }
+
+        .docs-section-content p {
+            margin-bottom: 16px;
+        }
+
+        .docs-section-content ul, .docs-section-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+        }
+
+        .docs-section-content li {
+            margin-bottom: 8px;
+        }
+
+        .code-block {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            font-family: monospace;
+            font-size: 14px;
+            color: #1a1a1a;
+            overflow-x: auto;
+        }
+
+        /* Footer */
+        .footer {
+            background: #1a1a1a;
+            color: white;
+            padding: 48px 0;
+            text-align: center;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: #d1d5db;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s ease;
+        }
+
+        .footer-link:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #374151;
+            font-size: 14px;
+            color: #9ca3af;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 16px;
+            }
+            
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .docs-container {
+                flex-direction: column;
+            }
+            
+            .docs-sidebar {
+                width: 100%;
+                position: relative;
+                top: 0;
+                max-height: none;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .footer-bottom {
+                flex-direction: column;
+                gap: 16px;
+            }
+        }
+
+        /* Smooth animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Placeholder for logo */
+        .logo-placeholder {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="index.html" class="logo">
+                    <img src="assets/applogo.jpg" alt="StegoCrypt Suite Logo" class="logo-img" style="width: 36px; height: 36px; border-radius: 8px; object-fit: contain;">
+                    StegoCrypt Suite
+                </a>
+                <div class="nav-links">
+                    <a href="index.html#features" class="nav-link">Features</a>
+                    <a href="index.html#security" class="nav-link">Security</a>
+                    <a href="index.html#download" class="nav-link">Download</a>
+                    <a href="#features" class="nav-link">Documentation</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content fade-in">
+                <div class="hero-badge">
+                    <span>📚</span>
+                    Complete Documentation
+                </div>
+                
+                <h1 class="hero-title">StegoCrypt Suite Documentation</h1>
+                
+                <p class="hero-subtitle">
+                    Learn how to use StegoCrypt Suite with our comprehensive guides, tutorials, and API reference.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Documentation Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">Technical Documentation</h2>
+                <p class="section-description">
+                    Everything you need to know to get the most out of StegoCrypt Suite.
+                </p>
+            </div>
+            
+            <div class="docs-container">
+                <div class="docs-sidebar fade-in">
+                    <ul class="docs-nav">
+                        <li class="docs-nav-item"><a href="#getting-started" class="docs-nav-link active">Getting Started</a></li>
+                        <li class="docs-nav-item"><a href="#installation" class="docs-nav-link">Installation</a></li>
+                        <li class="docs-nav-item"><a href="#image-steganography" class="docs-nav-link">Image Steganography</a></li>
+                        <li class="docs-nav-item"><a href="#audio-steganography" class="docs-nav-link">Audio Steganography</a></li>
+                        <li class="docs-nav-item"><a href="#video-steganography" class="docs-nav-link">Video Steganography</a></li>
+                        <li class="docs-nav-item"><a href="#text-steganography" class="docs-nav-link">Text Steganography</a></li>
+                        <li class="docs-nav-item"><a href="#encryption" class="docs-nav-link">Encryption</a></li>
+                        <li class="docs-nav-item"><a href="#file-security" class="docs-nav-link">File Security</a></li>
+                        <li class="docs-nav-item"><a href="#architecture" class="docs-nav-link">System Architecture</a></li>
+                    </ul>
+                </div>
+                
+                <div class="docs-content">
+                    <div id="getting-started" class="docs-section">
+                        <h2 class="docs-section-title">Getting Started</h2>
+                        <div class="docs-section-content">
+                            <h3>What is StegoCrypt Suite?</h3>
+                            <p>StegoCrypt Suite is a powerful desktop application that combines a Flutter-based frontend with a Python backend CLI to enable secure data hiding through:</p>
+                            <ul>
+                                <li><strong>Image Steganography</strong> using LSB encoding techniques</li>
+                                <li><strong>Audio Steganography</strong> with echo hiding methods</li>
+                                <li><strong>Video Steganography</strong> through frame-based embedding</li>
+                                <li><strong>Text Steganography</strong> using zero-width characters</li>
+                                <li><strong>AES Encryption</strong> with 128-bit keys</li>
+                                <li><strong>RSA Encryption</strong> for secure key exchange</li>
+                                <li><strong>Secure Hashing</strong> with multiple algorithm support</li>
+                                <li><strong>File Security</strong> with X25519 KEM + AES-GCM</li>
+                            </ul>
+                            
+                            <h3>System Architecture</h3>
+                            <p>StegoCrypt Suite follows a client-side architecture where a Flutter frontend communicates with a Python backend via direct process execution:</p>
+                            <ul>
+                                <li><strong>Frontend:</strong> Flutter UI (Dart) - provides the user interface and handles user interactions</li>
+                                <li><strong>Backend:</strong> Python CLI - performs all steganography, cryptography, and file security operations</li>
+                                <li><strong>Communication:</strong> Direct process execution - Flutter invokes the Python CLI as a subprocess</li>
+                                <li><strong>Data Exchange:</strong> JSON responses - all backend responses are formatted as JSON for easy parsing</li>
+                            </ul>
+                            
+                            <h3>Quick Start</h3>
+                            <ol>
+                                <li>Download StegoCrypt Suite for your platform</li>
+                                <li>Install the application (requires Python 3.8+ and FFmpeg)</li>
+                                <li>Launch and create your first project</li>
+                                <li>Select your steganography method</li>
+                                <li>Choose encryption parameters</li>
+                                <li>Process your files securely</li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <div id="installation" class="docs-section">
+                        <h2 class="docs-section-title">Installation Guide</h2>
+                        <div class="docs-section-content">
+                            <h3>System Requirements</h3>
+                            <p><strong>Minimum Requirements:</strong></p>
+                            <ul>
+                                <li><strong>Processor:</strong> Intel Core i3 or equivalent</li>
+                                <li><strong>RAM:</strong> 4GB (8GB recommended)</li>
+                                <li><strong>Storage:</strong> 500MB available space</li>
+                                <li><strong>Graphics:</strong> Basic graphics card</li>
+                                <li><strong>Python:</strong> Python 3.8 or later</li>
+                                <li><strong>FFmpeg:</strong> FFmpeg installed and available on system PATH</li>
+                            </ul>
+                            
+                            <p><strong>Supported Operating Systems:</strong></p>
+                            <ul>
+                                <li>Windows 10 or later</li>
+                                <li>macOS 10.14 or later</li>
+                                <li>Ubuntu 18.04 or equivalent Linux distributions</li>
+                            </ul>
+                            
+                            <h3>Required Python Dependencies</h3>
+                            <p>The Python backend requires the following dependencies to be installed:</p>
+                            <ul>
+                                <li><strong>Pillow==10.1.0</strong> - Image processing library</li>
+                                <li><strong>pycryptodome==3.19.0</strong> - Cryptographic toolkit</li>
+                                <li><strong>cryptography>=41.0.0</strong> - Cryptographic recipes and primitives</li>
+                                <li><strong>pydub</strong> - Audio manipulation library</li>
+                                <li><strong>numpy</strong> - Numerical computing library</li>
+                                <li><strong>opencv-python</strong> - Computer vision library for video processing</li>
+                                <li><strong>ffmpeg-python</strong> - FFmpeg wrapper (optional but recommended)</li>
+                            </ul>
+                            
+                            <h3>Installation Steps</h3>
+                            <p><strong>Windows:</strong></p>
+                            <ol>
+                                <li>Download <code>StegoCrypt_Suite_v3.0.0_Windows.exe</code></li>
+                                <li>Install Python 3.8+ if not already installed</li>
+                                <li>Install FFmpeg and ensure it's available on your system PATH</li>
+                                <li>Run the installer as administrator</li>
+                                <li>Follow the setup wizard</li>
+                                <li>Launch from Start Menu or Desktop shortcut</li>
+                            </ol>
+                            
+                            <p><strong>macOS:</strong></p>
+                            <ol>
+                                <li>Download <code>StegoCrypt_Suite_v3.0.0_macOS.dmg</code></li>
+                                <li>Install Python 3.8+ if not already installed</li>
+                                <li>Install FFmpeg and ensure it's available on your system PATH</li>
+                                <li>Open the DMG file and drag to Applications</li>
+                                <li>Launch from Launchpad or Applications</li>
+                            </ol>
+                            
+                            <p><strong>Linux:</strong></p>
+                            <ol>
+                                <li>Download <code>StegoCrypt_Suite_v3.0.0_Linux.AppImage</code></li>
+                                <li>Install Python 3.8+ if not already installed</li>
+                                <li>Install FFmpeg and ensure it's available on your system PATH</li>
+                                <li>Make executable: <code>chmod +x StegoCrypt_Suite_v3.0.0_Linux.AppImage</code></li>
+                                <li>Double-click to run or execute from terminal</li>
+                                <li>Optionally integrate with desktop environment</li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <div id="image-steganography" class="docs-section">
+                        <h2 class="docs-section-title">Image Steganography</h2>
+                        <div class="docs-section-content">
+                            <h3>LSB Encoding</h3>
+                            <p>Hide confidential data within image files using Least Significant Bit encoding techniques that preserve image quality.</p>
+                            
+                            <h3>Key Features</h3>
+                            <ul>
+                                <li><strong>RGB Pixel Manipulation</strong> - Modify least significant bits of RGB color channels</li>
+                                <li><strong>PNG Format Support</strong> - Lossless compression for better data retention</li>
+                                <li><strong>Invisible Data Embedding</strong> - Undetectable to the human eye</li>
+                                <li><strong>Delimiter-Based Extraction</strong> - Reliable data retrieval with markers</li>
+                            </ul>
+                            
+                            <h3>Supported Operations</h3>
+                            <ul>
+                                <li>Image encoding with secret message embedding</li>
+                                <li>Image decoding with message extraction</li>
+                                <li>Capacity validation based on image size</li>
+                                <li>Input validation and error handling</li>
+                            </ul>
+
+                            <img src="assets/photo.png" alt="Image Steganography" style="width: 100px; height: 100px; object-fit: contain;">
+                        </div>
+                    </div>
+                    
+                    <div id="audio-steganography" class="docs-section">
+                        <h2 class="docs-section-title">Audio Steganography</h2>
+                        <div class="docs-section-content">
+                            <h3>Echo Hiding Techniques</h3>
+                            <p>Conceal messages within audio files using sophisticated signal processing methods that maintain audio quality.</p>
+                            
+                            <h3>Key Features</h3>
+                            <ul>
+                                <li><strong>MP3/WAV Format Support</strong> - Compatible with popular audio formats</li>
+                                <li><strong>Echo Hiding Technique</strong> - Embed data in echo patterns</li>
+                                <li><strong>Spread Spectrum Methods</strong> - Distribute data across frequency bands</li>
+                                <li><strong>Frequency Masking</strong> - Hide data in inaudible frequency ranges</li>
+                            </ul>
+                            
+                            <h3>Supported Operations</h3>
+                            <ul>
+                                <li>Audio file encoding with data embedding</li>
+                                <li>Audio file decoding with message extraction</li>
+                                <li>Quality preservation algorithms</li>
+                                <li>Format validation and conversion</li>
+                            </ul>
+
+                            <img src="assets/audio.png" alt="Audio Steganography" style="width: 100px; height: 100px; object-fit: contain;">
+                        </div>
+                    </div>
+                    
+                    <div id="video-steganography" class="docs-section">
+                        <h2 class="docs-section-title">Video Steganography</h2>
+                        <div class="docs-section-content">
+                            <h3>Frame-Based Data Embedding</h3>
+                            <p>Hide data within video files using temporal and spatial domain techniques that preserve video quality.</p>
+                            
+                            <h3>Key Features</h3>
+                            <ul>
+                                <li><strong>MP4/AVI Format Support</strong> - Compatible with popular video formats</li>
+                                <li><strong>Frame-Based Embedding</strong> - Distribute data across multiple frames</li>
+                                <li><strong>Motion Vector Utilization</strong> - Leverage video compression characteristics</li>
+                                <li><strong>Real-Time Processing</strong> - Efficient algorithms for smooth operation</li>
+                            </ul>
+                            
+                            <h3>Supported Operations</h3>
+                            <ul>
+                                <li>Video file encoding with data embedding</li>
+                                <li>Video file decoding with message extraction</li>
+                                <li>Temporal analysis for optimal frame selection</li>
+                                <li>Quality preservation during processing</li>
+                            </ul>
+
+                            <img src="assets/video.png" alt="Video Steganography" style="width: 100px; height: 100px; object-fit: contain;">
+                        </div>
+                    </div>
+                    
+                    <div id="text-steganography" class="docs-section">
+                        <h2 class="docs-section-title">Text Steganography</h2>
+                        <div class="docs-section-content">
+                            <h3>Zero-Width Characters</h3>
+                            <p>Embed data using invisible Unicode characters within text for ultimate stealth and high detection resistance.</p>
+                            
+                            <h3>Key Features</h3>
+                            <ul>
+                                <li><strong>Zero-Width Character Encoding</strong> - Invisible Unicode characters</li>
+                                <li><strong>Unicode-Based Steganography</strong> - Leverage Unicode standard</li>
+                                <li><strong>Invisible to Naked Eye</strong> - Undetectable visual changes</li>
+                                <li><strong>High Detection Resistance</strong> - Resistant to steganalysis</li>
+                            </ul>
+                            
+                            <h3>Supported Operations</h3>
+                            <ul>
+                                <li>Text file encoding with hidden data</li>
+                                <li>Text file decoding with data extraction</li>
+                                <li>Character set validation</li>
+                                <li>Integrity checking mechanisms</li>
+                            </ul>
+
+                            <img src="assets/text.png" alt="Text Steganography" style="width: 100px; height: 100px; object-fit: contain;">
+                        </div>
+                    </div>
+                    
+                    <div id="encryption" class="docs-section">
+                        <h2 class="docs-section-title">Encryption</h2>
+                        <div class="docs-section-content">
+                            <h3>AES Encryption</h3>
+                            <p>Military-grade symmetric encryption algorithm.</p>
+                            <p><strong>Key Sizes:</strong> 128 bits</p>
+                            <p><strong>Block Size:</strong> 128 bits</p>
+                            <p><strong>Modes:</strong> EAX</p>
+                            <p><strong>Standard:</strong> FIPS 197 compliant</p>
+                            <img src="assets/military.png" alt="AES Encryption" style="width: 100px; height: 100px; object-fit: contain;">
+                            
+                            <h3>RSA Encryption</h3>
+                            <p>Asymmetric encryption for secure key exchange.</p>
+                            <p><strong>Key Lengths:</strong> 2048 bits</p>
+                            <p><strong>Padding:</strong> OAEP standard</p>
+                            <p><strong>Signatures:</strong> PSS support</p>
+                            <p><strong>Compatibility:</strong> PKCS#1</p>
+                            <img src="assets/rsa.png" alt="RSA Encryption" style="width: 100px; height: 100px; object-fit: contain;">
+
+                            <h3>Hashing</h3>
+                            <p>Cryptographic hash function.</p>
+                            <p><strong>Algorithms:</strong> SHA-1, SHA-256, SHA-512, MD5</p>
+                            <img src="assets/hashing.png" alt="Hashing" style="width: 100px; height: 100px; object-fit: contain;">
+                        </div>
+                    </div>
+                    
+                    <div id="file-security" class="docs-section">
+                        <h2 class="docs-section-title">File Security</h2>
+                        <div class="docs-section-content">
+                            <h3>X25519 + AES-GCM</h3>
+                            <p>Advanced file encryption using modern cryptographic techniques for maximum security.</p>
+                            
+                            <h3>Key Features</h3>
+                            <ul>
+                                <li><strong>X25519 KEM</strong> - Modern elliptic curve key exchange for secure key generation</li>
+                                <li><strong>AES-256-GCM</strong> - Authenticated encryption with integrity verification</li>
+                                <li><strong>Shamir's Secret Sharing</strong> - Split private keys into multiple shares for distributed security</li>
+                                <li><strong>Password Protection</strong> - Secure private key storage with Scrypt-based key derivation</li>
+                            </ul>
+                            
+                            <h3>Supported Operations</h3>
+                            <ul>
+                                <li>File encryption with X25519 + AES-GCM</li>
+                                <li>File decryption with private key verification</li>
+                                <li>Keypair generation and management</li>
+                                <li>Metadata inspection for encrypted files</li>
+                                <li>Private key splitting and reconstruction</li>
+                            </ul>
+                            
+                            <img src="assets/zeroknowledge.png" alt="File Security" style="width: 100px; height: 100px; object-fit: contain;">
+                        </div>
+                    </div>
+                    
+                    <div id="architecture" class="docs-section">
+                        <h2 class="docs-section-title">System Architecture</h2>
+                        <div class="docs-section-content">
+                            <h3>Overview</h3>
+                            <p>StegoCrypt Suite implements a client-side architecture with a clear separation between the user interface and the computational backend:</p>
+                            
+                            <h3>Frontend (Flutter)</h3>
+                            <ul>
+                                <li>Built with Flutter framework for cross-platform compatibility</li>
+                                <li>Provides intuitive UI for all steganography and cryptography operations</li>
+                                <li>Handles user input validation and error presentation</li>
+                                <li>Manages application state and user preferences</li>
+                            </ul>
+                            
+                            <h3>Backend (Python CLI)</h3>
+                            <ul>
+                                <li>Single-process CLI entrypoint: <code>stegocrypt_cli.py</code></li>
+                                <li>Executed via direct process execution from Flutter</li>
+                                <li>Returns all responses as JSON for easy parsing</li>
+                                <li>Implements all core steganography and cryptography algorithms</li>
+                            </ul>
+                            
+                            <h3>Communication Protocol</h3>
+                            <ul>
+                                <li>Flutter invokes Python CLI using <code>Process.run()</code></li>
+                                <li>Commands follow pattern: <code>python stegocrypt_cli.py &lt;command&gt; [--args]</code></li>
+                                <li>All responses are JSON objects printed to stdout</li>
+                                <li>Error handling through standardized JSON error responses</li>
+                            </ul>
+                            
+                            <h3>Module Structure</h3>
+                            <ul>
+                                <li><strong>Steganography:</strong> image_stego.py, audio_stego.py, video_stego.py, text_stego.py</li>
+                                <li><strong>Cryptography:</strong> aes_crypto.py, rsa_crypto.py, hashing.py</li>
+                                <li><strong>File Security:</strong> file encryption and secret sharing utilities</li>
+                                <li><strong>Utilities:</strong> validation, logging, and helper modules</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+
+                    
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <img src="assets/applogo.jpg" alt="StegoCrypt Suite Logo" class="logo-img" style="width: 36px; height: 36px; border-radius: 8px; object-fit: contain;">
+                    StegoCrypt Suite
+                </div>
+                <div class="footer-links">
+                    <a href="docs.html" class="footer-link">Documentation</a>
+                    <a href="support.html" class="footer-link">Support</a>
+                    <a href="license.html" class="footer-link">License</a>
+                    <a href="about.html" class="footer-link">About</a>
+                    <a href="https://github.com/blaze697214/StegoCrypt-Suite" class="footer-link">GitHub</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                © 2024 StegoCrypt Suite. Built for security professionals worldwide.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for documentation navigation (fixed header offset)
+        document.querySelectorAll('.docs-nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetSection = document.querySelector(targetId);
+                
+                if (targetSection) {
+                    // Remove active class from all links
+                    document.querySelectorAll('.docs-nav-link').forEach(navLink => {
+                        navLink.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked link
+                    this.classList.add('active');
+                    
+                    // Scroll to target section with offset for fixed header
+                    const offsetTop = targetSection.offsetTop - 100;
+                    window.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Update active link on scroll
+        window.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('.docs-section');
+            const navLinks = document.querySelectorAll('.docs-nav-link');
+            
+            let current = '';
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                
+                if (pageYOffset >= (sectionTop - 150)) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

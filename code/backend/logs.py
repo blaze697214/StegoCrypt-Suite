@@ -5,12 +5,33 @@ Logging utilities for StegoCrypt Suite
 import logging
 import os
 import json
+import sys
 from datetime import datetime
 
-# Configure logging
-LOG_DIR = os.path.join(os.path.dirname(__file__), "logs")
-os.makedirs(LOG_DIR, exist_ok=True)
+def get_log_directory():
+    """Get the appropriate log directory based on execution environment."""
+    # Try to get the directory of the current script
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+    except:
+        # Fallback to current working directory
+        script_dir = os.getcwd()
+    
+    # For packaged applications, try to use a user-writable directory
+    if getattr(sys, 'frozen', False):
+        # Running as compiled executable
+        app_dir = os.path.dirname(sys.executable)
+        log_dir = os.path.join(app_dir, "logs")
+    else:
+        # Running as script
+        log_dir = os.path.join(script_dir, "logs")
+    
+    # Ensure the directory exists
+    os.makedirs(log_dir, exist_ok=True)
+    return log_dir
 
+# Configure logging
+LOG_DIR = get_log_directory()
 LOG_FILE = os.path.join(LOG_DIR, "stegocrypt.log")
 
 # Basic file handler for raw logs

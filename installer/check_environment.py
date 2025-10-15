@@ -142,7 +142,7 @@ def check_project_structure():
     print(f"✅ pubspec.yaml found")
     
     # Check if backend directory exists
-    backend_dir = project_root / "backend"
+    backend_dir = code_dir / "backend"
     if not backend_dir.exists():
         print(f"❌ Backend directory not found: {backend_dir}")
         return False

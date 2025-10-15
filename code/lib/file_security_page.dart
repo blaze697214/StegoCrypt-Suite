@@ -5,12 +5,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import 'cyber_theme.dart';
 import 'cyber_widgets.dart';
+import 'backend_utils.dart';
 
 // Helper to get the backend script path
-Future<String> getBackendPath() async {
-  final baseDir = Directory.current.path;
-  return p.join(baseDir, 'backend', 'stegocrypt_cli.py');
-}
+
 
 class FileSecurityPage extends StatefulWidget {
   const FileSecurityPage({super.key});
@@ -45,9 +43,11 @@ class _FileSecurityPageState extends State<FileSecurityPage>
     setState(() => _isLoading = true);
     Map<String, dynamic>? result;
     try {
-      final pythonExec = Platform.isWindows ? 'python' : 'python3';
-      final backendPath = await getBackendPath();
-      final proc = await Process.run(pythonExec, [backendPath, ...args]);
+      final command = await getBackendCommand();
+      final proc = await Process.run(command.first, [
+        ...command.skip(1),
+        ...args,
+      ]);
 
       if (proc.exitCode == 0) {
         final out = proc.stdout is String

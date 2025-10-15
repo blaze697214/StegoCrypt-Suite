@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
@@ -9,11 +10,9 @@ import 'cyber_widgets.dart';
 import 'dart:convert';
 import 'package:path/path.dart' as p;
 import 'dart:typed_data';
+import 'backend_utils.dart';
 
-Future<String> getBackendPath() async {
-  final baseDir = Directory.current.path;
-  return p.join(baseDir, 'backend', 'stegocrypt_cli.py');
-}
+
 
 class TextStegoPage extends StatefulWidget {
   const TextStegoPage({super.key});
@@ -110,7 +109,7 @@ class _TextStegoPageState extends State<TextStegoPage> {
     }
   }
 
-  Future<void> _runRsaCommand(String command,
+  Future<void> _runRsaCommand(String commandName,
       {List<String> args = const [], Function? onLoading}) async {
     if (onLoading != null) onLoading(true);
     setState(() {
@@ -119,12 +118,11 @@ class _TextStegoPageState extends State<TextStegoPage> {
     });
 
     try {
-      final backendPath = await getBackendPath();
-      final pythonExec = Platform.isWindows ? 'python' : 'python3';
-      final result = await Process.run(pythonExec, [
-        backendPath,
+      final command = await getBackendCommand();
+      final result = await Process.run(command.first, [
+        ...command.skip(1),
         'rsa',
-        command,
+        commandName,
         ...args,
       ]);
 
@@ -176,23 +174,43 @@ class _TextStegoPageState extends State<TextStegoPage> {
     }
   }
 
-  void _importKeyPair() async {
+  void _importPublicKey() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
+      allowMultiple: false,
       type: FileType.custom,
       allowedExtensions: ['pem'],
     );
 
-    if (result != null && result.files.length == 2) {
-      final pubFile = result.files.firstWhere((f) => f.name.contains('public'), orElse: () => result.files[0]);
-      final privFile = result.files.firstWhere((f) => f.name.contains('private'), orElse: () => result.files[1]);
-
+    if (result != null && result.files.single.path != null) {
+      final pubFile = result.files.single;
+      
       _runRsaCommand('import-keys',
-          args: ['--pub-file', pubFile.path!, '--priv-file', privFile.path!],
+          args: ['--pub-file', pubFile.path!, '--priv-file', '""'], // Empty string for private key
           onLoading: (val) => setState(() => _isImportingKeys = val));
     } else {
       setState(() {
-        _errorText = "Please select both a public and a private .pem file.";
+        _errorText = "Please select a public .pem file.";
+      });
+      _showSnack(_errorText!, backgroundColor: Colors.red);
+    }
+  }
+
+  void _importPrivateKey() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      allowMultiple: false,
+      type: FileType.custom,
+      allowedExtensions: ['pem'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      final privFile = result.files.single;
+      
+      _runRsaCommand('import-keys',
+          args: ['--pub-file', '""', '--priv-file', privFile.path!], // Empty string for public key
+          onLoading: (val) => setState(() => _isImportingKeys = val));
+    } else {
+      setState(() {
+        _errorText = "Please select a private .pem file.";
       });
       _showSnack(_errorText!, backgroundColor: Colors.red);
     }
@@ -233,9 +251,9 @@ class _TextStegoPageState extends State<TextStegoPage> {
       final outputFilename =
           p.basename(inputPath).replaceFirst(p.extension(inputPath), '_encoded.txt');
 
-      final backendPath = await getBackendPath();
+      final command = await getBackendCommand();
       final args = [
-        backendPath,
+        ...command.skip(1),
         'encode-text',
         '--message',
         _messageController.text,
@@ -251,10 +269,9 @@ class _TextStegoPageState extends State<TextStegoPage> {
         args.addAll(['--password', _passwordController.text]);
       }
 
-      final pythonExec = Platform.isWindows ? 'python' : 'python3';
       appProvider.updateProgress(0.25);
 
-      final result = await Process.run(pythonExec, args, runInShell: true);
+      final result = await Process.run(command.first, args, runInShell: true);
       appProvider.updateProgress(0.7);
 
       if (result.exitCode == 0) {
@@ -326,9 +343,9 @@ class _TextStegoPageState extends State<TextStegoPage> {
 
     try {
       final inputPath = _selectedTextFile!.path;
-      final backendPath = await getBackendPath();
+      final command = await getBackendCommand();
       final args = [
-        backendPath,
+        ...command.skip(1),
         'decode-text',
         '--algorithm',
         _selectedAlgorithm,
@@ -340,10 +357,9 @@ class _TextStegoPageState extends State<TextStegoPage> {
         args.addAll(['--password', _passwordController.text]);
       }
 
-      final pythonExec = Platform.isWindows ? 'python' : 'python3';
       appProvider.updateProgress(0.25);
 
-      final result = await Process.run(pythonExec, args, runInShell: true);
+      final result = await Process.run(command.first, args, runInShell: true);
       appProvider.updateProgress(0.7);
 
       if (result.exitCode == 0) {
@@ -681,6 +697,7 @@ class _TextStegoPageState extends State<TextStegoPage> {
       children: [
         Text('RSA Key Management', style: CyberTheme.heading3),
         const SizedBox(height: 16),
+        // Center the generate button in its own row
         Center(
           child: CyberButton(
             text: 'Generate Key Pair',
@@ -691,23 +708,51 @@ class _TextStegoPageState extends State<TextStegoPage> {
           ),
         ),
         const SizedBox(height: 16),
+        // Place import public and private key buttons side by side
         Row(
-          children:[
-            CyberButton(
-              text: 'Import Key Pair',
-              icon: Icons.file_upload_outlined,
-              onPressed: _importKeyPair,
-              isLoading: _isImportingKeys,
+          children: [
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: CyberButton(
+                  text: 'Import Public Key',
+                  icon: Icons.file_upload_outlined,
+                  onPressed: _importPublicKey,
+                  isLoading: _isImportingKeys,
+                  variant: CyberButtonVariant.secondary,
+                ),
+              ),
             ),
-            const SizedBox(width: 16),
-            CyberButton(
-              text: 'Export Key Pair',
-              icon: Icons.file_download_outlined,
-              onPressed: _exportKeyPair,
-              isLoading: _isExportingKeys,
+            const SizedBox(width: 8),
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: CyberButton(
+                  text: 'Import Private Key',
+                  icon: Icons.file_upload_outlined,
+                  onPressed: _importPrivateKey,
+                  isLoading: _isImportingKeys,
+                  variant: CyberButtonVariant.secondary,
+                ),
+              ),
             ),
-          ]
-        )
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Elongated export button below them
+        Row(
+          children: [
+            Expanded(
+              child: CyberButton(
+                text: 'Export Key Pair',
+                icon: Icons.file_download_outlined,
+                onPressed: _exportKeyPair, // Always enabled
+                isLoading: _isExportingKeys,
+                variant: CyberButtonVariant.primary,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }

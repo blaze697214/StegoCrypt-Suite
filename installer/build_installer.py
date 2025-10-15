@@ -232,7 +232,7 @@ def build_python_backend(paths, python_env):
     """Build standalone Python backend"""
     print("\nBuilding Python backend...")
     
-    backend_script = paths['project_root'] / 'backend' / 'stegocrypt_cli.py'
+    backend_script = paths['code_dir'] / 'backend' / 'stegocrypt_cli.py'
     backend_dist = paths['build_dir'] / 'backend_dist'
     
     # Build with PyInstaller
@@ -247,7 +247,7 @@ def build_python_backend(paths, python_env):
         str(backend_script)
     ]
     
-    subprocess.run(cmd, check=True, cwd=str(paths['project_root']))
+    subprocess.run(cmd, check=True, cwd=str(paths['code_dir']))
     
     # Check if backend was built
     backend_executable = 'stegocrypt_backend.exe' if platform.system() == 'Windows' else 'stegocrypt_backend'

@@ -9,14 +9,9 @@ import 'cyber_widgets.dart';
 import 'dart:convert';
 import 'package:path/path.dart' as p;
 import 'dart:typed_data';
+import 'backend_utils.dart';
 
-Future<String> getBackendPath() async {
-  // Project's base dir
-  final baseDir = Directory.current.path;
 
-  // Join project folder + backend + script
-  return p.join(baseDir, 'backend', 'stegocrypt_cli.py');
-}
 
 class ImageStegoPage extends StatefulWidget {
   const ImageStegoPage({super.key});
@@ -52,6 +47,31 @@ class _ImageStegoPageState extends State<ImageStegoPage>
   void initState() {
     super.initState();
     _loadAlgorithms();
+    // Keys will only be checked after explicit user actions
+  }
+
+  Future<void> _checkKeyStatus() async {
+    // This function is kept for compatibility but no longer updates UI state
+    // since we removed the key status display
+    try {
+      final command = await getBackendCommand();
+      final result = await Process.run(command.first, [
+        ...command.skip(1),
+        'rsa',
+        'key-status',
+      ]);
+
+      if (result.exitCode == 0) {
+        final output = jsonDecode(result.stdout);
+        if (output['status'] == 'success') {
+          // We no longer update UI state since we removed the key status display
+          // The function is kept for potential future use
+        }
+      }
+    } catch (e) {
+      // Ignore errors in key status check
+      print('Failed to check key status: $e');
+    }
   }
 
   @override
@@ -143,7 +163,7 @@ class _ImageStegoPageState extends State<ImageStegoPage>
     }
   }
 
-  Future<void> _runRsaCommand(String command,
+  Future<void> _runRsaCommand(String commandName,
       {List<String> args = const [], Function? onLoading}) async {
     if (onLoading != null) onLoading(true);
     setState(() {
@@ -152,12 +172,11 @@ class _ImageStegoPageState extends State<ImageStegoPage>
     });
 
     try {
-      final backendPath = await getBackendPath();
-      final pythonExec = Platform.isWindows ? 'python' : 'python3';
-      final result = await Process.run(pythonExec, [
-        backendPath,
+      final command = await getBackendCommand();
+      final result = await Process.run(command.first, [
+        ...command.skip(1),
         'rsa',
-        command,
+        commandName,
         ...args,
       ]);
 
@@ -169,6 +188,11 @@ class _ImageStegoPageState extends State<ImageStegoPage>
             _successText = output['message'];
           });
           _showSnack(_successText!);
+          
+          // Check key status after key operations
+          if (commandName == 'import-keys' || commandName == 'generate-keys' || commandName == 'export-keys') {
+            await _checkKeyStatus();
+          }
         } else {
           setState(() {
             _errorText = output['message'] ?? 'An unknown error occurred.';
@@ -209,23 +233,43 @@ class _ImageStegoPageState extends State<ImageStegoPage>
     }
   }
 
-  void _importKeyPair() async {
+  void _importPublicKey() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
+      allowMultiple: false,
       type: FileType.custom,
       allowedExtensions: ['pem'],
     );
 
-    if (result != null && result.files.length == 2) {
-      final pubFile = result.files.firstWhere((f) => f.name.contains('public'), orElse: () => result.files[0]);
-      final privFile = result.files.firstWhere((f) => f.name.contains('private'), orElse: () => result.files[1]);
-
+    if (result != null && result.files.single.path != null) {
+      final pubFile = result.files.single;
+      
       _runRsaCommand('import-keys',
-          args: ['--pub-file', pubFile.path!, '--priv-file', privFile.path!],
+          args: ['--pub-file', pubFile.path!, '--priv-file', '""'], // Empty string for private key
           onLoading: (val) => setState(() => _isImportingKeys = val));
     } else {
       setState(() {
-        _errorText = "Please select both a public and a private .pem file.";
+        _errorText = "Please select a public .pem file.";
+      });
+      _showSnack(_errorText!, backgroundColor: Colors.red);
+    }
+  }
+
+  void _importPrivateKey() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      allowMultiple: false,
+      type: FileType.custom,
+      allowedExtensions: ['pem'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      final privFile = result.files.single;
+      
+      _runRsaCommand('import-keys',
+          args: ['--pub-file', '""', '--priv-file', privFile.path!], // Empty string for public key
+          onLoading: (val) => setState(() => _isImportingKeys = val));
+    } else {
+      setState(() {
+        _errorText = "Please select a private .pem file.";
       });
       _showSnack(_errorText!, backgroundColor: Colors.red);
     }
@@ -262,27 +306,31 @@ class _ImageStegoPageState extends State<ImageStegoPage>
 
     try {
       final inputPath = _selectedImageFile!.path;
-      final outputFilename = p.basename(inputPath).replaceFirst(p.extension(inputPath), '_encoded.png');
+      final outputFilename =
+          p.basename(inputPath).replaceFirst(RegExp(r'\.[^.]*$'), '_encoded.png');
 
-      final backendPath = await getBackendPath();
+      final command = await getBackendCommand();
       final args = [
-        backendPath,
+        ...command.skip(1),
         'encode-image',
-        '--message', _messageController.text,
-        '--algorithm', _selectedAlgorithm,
-        '--input-file', inputPath,
-        '--output-file', outputFilename,
+        '--message',
+        _messageController.text,
+        '--algorithm',
+        _selectedAlgorithm,
+        '--input-file',
+        inputPath,
+        '--output-file',
+        outputFilename,
       ];
 
       if (_selectedAlgorithm == 'AES') {
         args.addAll(['--password', _passwordController.text]);
       }
 
-      final pythonExec = Platform.isWindows ? 'python' : 'python3';
+      final appProvider = Provider.of<AppProvider>(context, listen: false);
       appProvider.updateProgress(0.25);
 
-      final result = await Process.run(pythonExec, args, runInShell: true);
-      appProvider.updateProgress(0.7);
+      final result = await Process.run(command.first, args, runInShell: true);
 
       if (result.exitCode == 0) {
         final stdoutText = (result.stdout ?? '').toString().trim();
@@ -301,7 +349,12 @@ class _ImageStegoPageState extends State<ImageStegoPage>
               _showSnack(json['message'] ?? 'Encoded successfully');
             } else {
               final err = json['message'] ?? json['error'] ?? stdoutText;
-              await _showLongErrorDialog('Encoding failed', err.toString());
+              // Check for RSA-specific errors
+              if (err.toString().contains('Public key not found')) {
+                await _showLongErrorDialog('Encoding failed', 'Public key not found. Please import or generate a public key before encoding with RSA.');
+              } else {
+                await _showLongErrorDialog('Encoding failed', err.toString());
+              }
             }
           } catch (e) {
             await _showLongErrorDialog('Encoding failed', 'Failed to parse JSON response from backend:\n$e\n\nResponse:\n$stdoutText');
@@ -346,23 +399,24 @@ class _ImageStegoPageState extends State<ImageStegoPage>
 
     try {
       final inputPath = _selectedImageFile!.path;
-      final backendPath = await getBackendPath();
+      final command = await getBackendCommand();
       final args = [
-        backendPath,
+        ...command.skip(1),
         'decode-image',
-        '--algorithm', _selectedAlgorithm,
-        '--input-file', inputPath,
+        '--algorithm',
+        _selectedAlgorithm,
+        '--input-file',
+        inputPath,
       ];
 
       if (_selectedAlgorithm == 'AES') {
         args.addAll(['--password', _passwordController.text]);
       }
 
-      final pythonExec = Platform.isWindows ? 'python' : 'python3';
+      final appProvider = Provider.of<AppProvider>(context, listen: false);
       appProvider.updateProgress(0.25);
 
-      final result = await Process.run(pythonExec, args, runInShell: true);
-      appProvider.updateProgress(0.7);
+      final result = await Process.run(command.first, args, runInShell: true);
 
       if (result.exitCode == 0) {
         final stdoutText = (result.stdout ?? '').toString().trim();
@@ -389,7 +443,12 @@ class _ImageStegoPageState extends State<ImageStegoPage>
               _showSnack('Decoded successfully');
             } else {
               final err = json['message'] ?? json['error'] ?? stdoutText;
-              await _showLongErrorDialog('Decoding failed', err.toString());
+              // Check for RSA-specific errors
+              if (err.toString().contains('Private key not found')) {
+                await _showLongErrorDialog('Decoding failed', 'Private key not found. Please import or generate a private key before decoding with RSA.');
+              } else {
+                await _showLongErrorDialog('Decoding failed', err.toString());
+              }
             }
           } catch (e) {
             setState(() {
@@ -706,6 +765,7 @@ class _ImageStegoPageState extends State<ImageStegoPage>
       children: [
         Text('RSA Key Management', style: CyberTheme.heading3),
         const SizedBox(height: 16),
+        // Center the generate button in its own row
         Center(
           child: CyberButton(
             text: 'Generate Key Pair',
@@ -716,23 +776,45 @@ class _ImageStegoPageState extends State<ImageStegoPage>
           ),
         ),
         const SizedBox(height: 16),
+        // Place import public and private key buttons side by side
         Row(
-          children:[
-            CyberButton(
-              text: 'Import Key Pair',
-              icon: Icons.file_upload_outlined,
-              onPressed: _importKeyPair,
-              isLoading: _isImportingKeys,
+          children: [
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: CyberButton(
+                  text: 'Import Public Key',
+                  icon: Icons.file_upload_outlined,
+                  onPressed: _importPublicKey,
+                  isLoading: _isImportingKeys,
+                  variant: CyberButtonVariant.secondary,
+                ),
+              ),
             ),
-            const SizedBox(width: 16),
-            CyberButton(
-              text: 'Export Key Pair',
-              icon: Icons.file_download_outlined,
-              onPressed: _exportKeyPair,
-              isLoading: _isExportingKeys,
+            const SizedBox(width: 8),
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: CyberButton(
+                  text: 'Import Private Key',
+                  icon: Icons.file_upload_outlined,
+                  onPressed: _importPrivateKey,
+                  isLoading: _isImportingKeys,
+                  variant: CyberButtonVariant.secondary,
+                ),
+              ),
             ),
-          ]
-        )
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Elongated export button below them
+        CyberButton(
+          text: 'Export Key Pair',
+          icon: Icons.file_download_outlined,
+          onPressed: _exportKeyPair, // Always enabled
+          isLoading: _isExportingKeys,
+          variant: CyberButtonVariant.primary,
+        ),
       ],
     );
   }

@@ -8,6 +8,7 @@ import os
 import sys
 import json
 import hashlib
+import time
 
 # Set stdout and stderr to utf-8
 if sys.stdout.encoding != 'utf-8':
@@ -52,6 +53,11 @@ from validation.inputs import non_empty_string
 from validation.errors import ValidationError
 
 STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.keymanager_state.json')
+
+# Add a simple progress reporting function
+def report_progress(operation, progress):
+    """Report progress to stderr for real-time feedback"""
+    print(f"PROGRESS - {operation}: {progress}%", file=sys.stderr, flush=True)
 
 def save_key_manager_state(km):
     """Save KeyManager state to disk using JSON"""
@@ -200,10 +206,11 @@ def encrypt_message(message: str, method: str, password: Optional[str] = None) -
             return base64.b64encode(payload).decode('utf-8')
 
         elif method.upper() == "RSA":
-            _, public_key = load_keys()
+            # Import the actual load function for this operation
+            from local_crypto.rsa_crypto import _load_existing_keys
+            _, public_key = _load_existing_keys()
             if not public_key:
-                generate_rsa_keys()
-                _, public_key = load_keys()
+                raise ValueError("Public key not found. Please import or generate a public key before encoding with RSA.")
             
             encrypted_data = encrypt_with_rsa(public_key, message)
             return base64.b64encode(encrypted_data).decode('utf-8')
@@ -240,9 +247,11 @@ def decrypt_message(ciphertext: str, method: str, password: Optional[str] = None
                 return decrypt_aes(key, encrypted_data)
 
         elif method.upper() == "RSA":
-            private_key, _ = load_keys()
+            # Import the actual load function for this operation
+            from local_crypto.rsa_crypto import _load_existing_keys
+            private_key, _ = _load_existing_keys()
             if not private_key:
-                raise ValueError("RSA private key not found. Cannot decrypt.")
+                raise ValueError("Private key not found. Please import or generate a private key before decoding with RSA.")
             return decrypt_with_rsa(private_key, encrypted_data)
 
         else:
@@ -254,13 +263,21 @@ def decrypt_message(ciphertext: str, method: str, password: Optional[str] = None
 def process_image_encode(args):
     """Process image encoding request"""
     try:
+        start_time = time.time()
         log_operation("ENCODE_IMAGE", "STARTED", {"filename": os.path.basename(args.input_file)})
         
         # Encrypt the message first
         password = args.password if hasattr(args, 'password') else None
-        encrypted_message = encrypt_message(args.message, args.algorithm, password)
+        try:
+            encrypted_message = encrypt_message(args.message, args.algorithm, password)
+        except Exception as e:
+            error_msg = str(e)
+            if "Public key not found" in error_msg:
+                return {"status": "error", "success": False, "message": f"Encoding failed: {error_msg}"}
+            raise e
         
         # Encode the encrypted message into the image and get the bytes
+        print("DEBUG - Starting image encoding", file=sys.stderr)
         encoded_image_bytes = encode_image(args.input_file, encrypted_message)
         
         # Base64 encode the bytes to send as a string in JSON
@@ -269,12 +286,14 @@ def process_image_encode(args):
         output_filename = args.output_file
         if not output_filename.lower().endswith('.png'):
             output_filename += '.png'
-
-        log_operation("ENCODE_IMAGE", "SUCCESS", {"filename": os.path.basename(output_filename)})
+        
+        end_time = time.time()
+        duration = end_time - start_time
+        log_operation("ENCODE_IMAGE", "SUCCESS", {"filename": os.path.basename(output_filename), "duration": f"{duration:.2f}s"})
         return {
             "status": "success",
             "success": True,
-            "message": "Message successfully encoded into image",
+            "message": f"Message successfully encoded into image in {duration:.2f} seconds",
             "image_data": encoded_image_base64,
             "filename": os.path.basename(output_filename),
         }
@@ -289,9 +308,11 @@ def process_image_encode(args):
 def process_image_decode(args):
     """Process image decoding request"""
     try:
+        start_time = time.time()
         log_operation("DECODE_IMAGE", "STARTED", {"filename": os.path.basename(args.input_file)})
         
         # Decode the message from the image
+        print("DEBUG - Starting image decoding", file=sys.stderr)
         decoded_text = decode_image(args.input_file)
         
         if decoded_text is None:
@@ -307,9 +328,17 @@ def process_image_decode(args):
         
         # Decrypt the message
         password = args.password if hasattr(args, 'password') else None
-        decrypted_message = decrypt_message(decoded_text, args.algorithm, password)
+        try:
+            decrypted_message = decrypt_message(decoded_text, args.algorithm, password)
+        except Exception as e:
+            error_msg = str(e)
+            if "Private key not found" in error_msg:
+                return {"status": "error", "success": False, "message": f"Decoding failed: {error_msg}"}
+            raise e
         
-        log_operation("DECODE_IMAGE", "SUCCESS", {"filename": os.path.basename(args.input_file)})
+        end_time = time.time()
+        duration = end_time - start_time
+        log_operation("DECODE_IMAGE", "SUCCESS", {"filename": os.path.basename(args.input_file), "duration": f"{duration:.2f}s"})
         return {
             "status": "success",
             "success": True,
@@ -327,20 +356,24 @@ def process_image_decode(args):
 def process_audio_encode(args):
     """Process audio encoding request"""
     try:
+        start_time = time.time()
         log_operation("ENCODE_AUDIO", "STARTED", {"filename": os.path.basename(args.input_file)})
         
         password = args.password if hasattr(args, 'password') else None
         encrypted_message = encrypt_message(args.message, args.algorithm, password)
         
+        print("DEBUG - Starting audio encoding", file=sys.stderr)
         encoded_audio_bytes = encode_audio(args.input_file, encrypted_message)
         
         encoded_audio_base64 = base64.b64encode(encoded_audio_bytes).decode('utf-8')
         
-        log_operation("ENCODE_AUDIO", "SUCCESS", {"filename": os.path.basename(args.output_file)})
+        end_time = time.time()
+        duration = end_time - start_time
+        log_operation("ENCODE_AUDIO", "SUCCESS", {"filename": os.path.basename(args.output_file), "duration": f"{duration:.2f}s"})
         return {
             "status": "success",
             "success": True,
-            "message": "Message successfully encoded into audio",
+            "message": f"Message successfully encoded into audio in {duration:.2f} seconds",
             "audio_data": encoded_audio_base64,
             "filename": os.path.basename(args.output_file),
         }
@@ -355,8 +388,10 @@ def process_audio_encode(args):
 def process_audio_decode(args):
     """Process audio decoding request"""
     try:
+        start_time = time.time()
         log_operation("DECODE_AUDIO", "STARTED", {"filename": os.path.basename(args.input_file)})
         
+        print("DEBUG - Starting audio decoding", file=sys.stderr)
         decoded_text = decode_audio(args.input_file)
         
         if decoded_text is None:
@@ -373,7 +408,9 @@ def process_audio_decode(args):
         password = args.password if hasattr(args, 'password') else None
         decrypted_message = decrypt_message(decoded_text, args.algorithm, password)
         
-        log_operation("DECODE_AUDIO", "SUCCESS", {"filename": os.path.basename(args.input_file)})
+        end_time = time.time()
+        duration = end_time - start_time
+        log_operation("DECODE_AUDIO", "SUCCESS", {"filename": os.path.basename(args.input_file), "duration": f"{duration:.2f}s"})
         return {
             "status": "success",
             "success": True,
@@ -391,6 +428,7 @@ def process_audio_decode(args):
 def process_video_encode(args):
     """Process video encoding request"""
     try:
+        start_time = time.time()
         log_operation("ENCODE_VIDEO", "STARTED", {"filename": os.path.basename(args.input_file)})
         
         # Encrypt the message first
@@ -398,16 +436,19 @@ def process_video_encode(args):
         encrypted_message = encrypt_message(args.message, args.algorithm, password)
         
         # Encode the encrypted message into the video and get the bytes
+        print("DEBUG - Starting video encoding", file=sys.stderr)
         encoded_video_bytes = encode_video(args.input_file, encrypted_message)
         
         # Base64 encode the bytes to send as a string in JSON
         encoded_video_base64 = base64.b64encode(encoded_video_bytes).decode('utf-8')
         
-        log_operation("ENCODE_VIDEO", "SUCCESS", {"filename": os.path.basename(args.output_file)})
+        end_time = time.time()
+        duration = end_time - start_time
+        log_operation("ENCODE_VIDEO", "SUCCESS", {"filename": os.path.basename(args.output_file), "duration": f"{duration:.2f}s"})
         return {
             "status": "success",
             "success": True,
-            "message": "Message successfully encoded into video",
+            "message": f"Message successfully encoded into video in {duration:.2f} seconds",
             "video_data": encoded_video_base64,
             "filename": os.path.basename(args.output_file),
         }
@@ -422,9 +463,11 @@ def process_video_encode(args):
 def process_video_decode(args):
     """Process video decoding request"""
     try:
+        start_time = time.time()
         log_operation("DECODE_VIDEO", "STARTED", {"filename": os.path.basename(args.input_file)})
         
         # Decode the message from the video
+        print("DEBUG - Starting video decoding", file=sys.stderr)
         with open(args.input_file, "rb") as f:
             video_bytes = f.read()
 
@@ -445,7 +488,9 @@ def process_video_decode(args):
         password = args.password if hasattr(args, 'password') else None
         decrypted_message = decrypt_message(decoded_text, args.algorithm, password)
         
-        log_operation("DECODE_VIDEO", "SUCCESS", {"filename": os.path.basename(args.input_file)})
+        end_time = time.time()
+        duration = end_time - start_time
+        log_operation("DECODE_VIDEO", "SUCCESS", {"filename": os.path.basename(args.input_file), "duration": f"{duration:.2f}s"})
         return {
             "status": "success",
             "success": True,
@@ -463,6 +508,7 @@ def process_video_decode(args):
 def process_text_encode(args):
     """Process text encoding request"""
     try:
+        start_time = time.time()
         log_operation("ENCODE_TEXT", "STARTED", {"filename": os.path.basename(args.input_file)})
 
         password = args.password if hasattr(args, 'password') else None
@@ -475,11 +521,13 @@ def process_text_encode(args):
         
         encoded_text_base64 = base64.b64encode(encoded_text.encode('utf-8')).decode('utf-8')
 
-        log_operation("ENCODE_TEXT", "SUCCESS", {"filename": os.path.basename(args.output_file)})
+        end_time = time.time()
+        duration = end_time - start_time
+        log_operation("ENCODE_TEXT", "SUCCESS", {"filename": os.path.basename(args.output_file), "duration": f"{duration:.2f}s"})
         return {
             "status": "success",
             "success": True,
-            "message": "Message successfully encoded into text",
+            "message": f"Message successfully encoded into text in {duration:.2f} seconds",
             "text_data": encoded_text_base64,
             "filename": os.path.basename(args.output_file),
         }
@@ -494,6 +542,7 @@ def process_text_encode(args):
 def process_text_decode(args):
     """Process text decoding request"""
     try:
+        start_time = time.time()
         log_operation("DECODE_TEXT", "STARTED", {"filename": os.path.basename(args.input_file)})
 
         with open(args.input_file, 'r', encoding='utf-8') as f:
@@ -514,7 +563,9 @@ def process_text_decode(args):
         password = args.password if hasattr(args, 'password') else None
         decrypted_message = decrypt_message(decoded_text, args.algorithm, password)
 
-        log_operation("DECODE_TEXT", "SUCCESS", {"filename": os.path.basename(args.input_file)})
+        end_time = time.time()
+        duration = end_time - start_time
+        log_operation("DECODE_TEXT", "SUCCESS", {"filename": os.path.basename(args.input_file), "duration": f"{duration:.2f}s"})
         return {
             "status": "success",
             "success": True,
@@ -532,11 +583,14 @@ def process_text_decode(args):
 def process_encrypt(args):
     """Process encryption request"""
     try:
+        start_time = time.time()
         log_operation("ENCRYPT", "STARTED", {"method": args.method})
         password = args.password if hasattr(args, 'password') else None
         ciphertext = encrypt_message(args.message, args.method, password)
-        log_operation("ENCRYPT", "SUCCESS", {"method": args.method})
-        return {"status": "success", "ciphertext": ciphertext}
+        end_time = time.time()
+        duration = end_time - start_time
+        log_operation("ENCRYPT", "SUCCESS", {"method": args.method, "duration": f"{duration:.2f}s"})
+        return {"status": "success", "ciphertext": ciphertext, "message": f"Encryption completed in {duration:.2f} seconds"}
     except Exception as e:
         log_operation("ENCRYPT", "FAILED", {"error": str(e)})
         return {"status": "error", "message": str(e)}
@@ -544,11 +598,14 @@ def process_encrypt(args):
 def process_decrypt(args):
     """Process decryption request"""
     try:
+        start_time = time.time()
         log_operation("DECRYPT", "STARTED", {"method": args.method})
         password = args.password if hasattr(args, 'password') else None
         message = decrypt_message(args.ciphertext, args.method, password)
-        log_operation("DECRYPT", "SUCCESS", {"method": args.method})
-        return {"status": "success", "message": message}
+        end_time = time.time()
+        duration = end_time - start_time
+        log_operation("DECRYPT", "SUCCESS", {"method": args.method, "duration": f"{duration:.2f}s"})
+        return {"status": "success", "message": message, "duration": f"{duration:.2f}s"}
     except Exception as e:
         log_operation("DECRYPT", "FAILED", {"error": str(e)})
         return {"status": "error", "message": str(e)}
@@ -556,10 +613,13 @@ def process_decrypt(args):
 def process_hash(args):
     """Process hashing request"""
     try:
+        start_time = time.time()
         log_operation("HASH", "STARTED", {"algorithm": args.algorithm})
         hash_value = hash_message(args.message, args.algorithm)
-        log_operation("HASH", "SUCCESS", {"algorithm": args.algorithm})
-        return {"status": "success", "hash": hash_value, "algorithm": args.algorithm}
+        end_time = time.time()
+        duration = end_time - start_time
+        log_operation("HASH", "SUCCESS", {"algorithm": args.algorithm, "duration": f"{duration:.2f}s"})
+        return {"status": "success", "hash": hash_value, "algorithm": args.algorithm, "duration": f"{duration:.2f}s"}
     except Exception as e:
         log_operation("HASH", "FAILED", {"error": str(e)})
         return {"status": "error", "message": str(e)}
@@ -567,10 +627,13 @@ def process_hash(args):
 def process_verify_hash(args):
     """Process hash verification request"""
     try:
+        start_time = time.time()
         log_operation("VERIFY_HASH", "STARTED", {"algorithm": args.algorithm})
         is_valid = verify_hash(args.message, args.hash_value, args.algorithm)
-        log_operation("VERIFY_HASH", "SUCCESS" if is_valid else "FAILED", {"algorithm": args.algorithm})
-        return {"status": "success", "valid": is_valid, "algorithm": args.algorithm}
+        end_time = time.time()
+        duration = end_time - start_time
+        log_operation("VERIFY_HASH", "SUCCESS" if is_valid else "FAILED", {"algorithm": args.algorithm, "duration": f"{duration:.2f}s"})
+        return {"status": "success", "valid": is_valid, "algorithm": args.algorithm, "duration": f"{duration:.2f}s"}
     except Exception as e:
         log_operation("VERIFY_HASH", "FAILED", {"error": str(e)})
         return {"status": "error", "message": str(e)}
@@ -613,19 +676,36 @@ def process_rsa_command(args):
             import_keys(args.pub_file, args.priv_file)
             return {"status": "success", "message": "RSA keys imported successfully"}
         elif args.rsa_command == "export-keys":
-            export_keys(args.output_dir)
+            exported_files = export_keys(args.output_dir)
             return {
                 "status": "success",
-                "message": f"RSA keys exported to {args.output_dir}",
+                "message": f"RSA keys exported to {args.output_dir}: {', '.join(exported_files)}",
             }
         elif args.rsa_command == "encrypt":
-            _, public_key = load_keys()
+            # Import the actual load function for this operation
+            from local_crypto.rsa_crypto import _load_existing_keys
+            _, public_key = _load_existing_keys()
+            if public_key is None:
+                return {"status": "error", "message": "Public key not found. Please import or generate a public key before encoding."}
             encrypted = encrypt_with_rsa(public_key, args.message)
             return {"status": "success", "ciphertext": base64.b64encode(encrypted).decode('utf-8')}
         elif args.rsa_command == "decrypt":
-            private_key, _ = load_keys()
+            # Import the actual load function for this operation
+            from local_crypto.rsa_crypto import _load_existing_keys
+            private_key, _ = _load_existing_keys()
+            if private_key is None:
+                return {"status": "error", "message": "Private key not found. Please import or generate a private key before decoding."}
             decrypted = decrypt_with_rsa(private_key, base64.b64decode(args.ciphertext))
             return {"status": "success", "message": decrypted}
+        elif args.rsa_command == "key-status":
+            # Import the actual load function for this operation
+            from local_crypto.rsa_crypto import _load_existing_keys
+            private_key, public_key = _load_existing_keys()
+            return {
+                "status": "success",
+                "public_key_loaded": public_key is not None,
+                "private_key_loaded": private_key is not None
+            }
         else:
             return {"status": "error", "message": f"Unknown RSA command: {args.rsa_command}"}
     except Exception as e:
@@ -1023,6 +1103,8 @@ def main():
     rsa_decrypt_parser = rsa_subparsers.add_parser('decrypt', help='Decrypt a message with RSA')
     rsa_decrypt_parser.add_argument('--ciphertext', required=True, help='Ciphertext to decrypt')
 
+    rsa_subparsers.add_parser('key-status', help='Check which RSA keys are loaded')
+    
     # File Security
     fs_parser = subparsers.add_parser('file-security', help='File encryption and key management')
     fs_subparsers = fs_parser.add_subparsers(dest='fs_command', help='File security commands')

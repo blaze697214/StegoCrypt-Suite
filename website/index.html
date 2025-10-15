@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StegoCrypt Suite - Advanced Steganography & Cryptography Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #ffffff;
+            color: #1a1a1a;
+            line-height: 1.6;
+            scroll-behavior: smooth;
+            overflow: hidden;
+        }
+
+        /* Preloader */
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out, visibility 0.5s;
+        }
+
+        .preloader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .preloader-content {
+            text-align: center;
+        }
+
+        .preloader-logo {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            animation: preloaderPulse 1.5s ease-in-out infinite;
+        }
+
+        .preloader-text {
+            color: #2563eb;
+            font-weight: 600;
+            font-size: 18px;
+            letter-spacing: 1px;
+        }
+
+        @keyframes preloaderPulse {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% { 
+                transform: scale(1.1);
+                opacity: 0.7;
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            height: 70px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+        }
+
+        .nav-link {
+            color: #4b5563;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: #2563eb;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 140px 0 80px;
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+        }
+
+        .hero-content {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 32px;
+            opacity: 0;
+            animation: slideInFromTop 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) 0.3s forwards;
+        }
+
+        @keyframes slideInFromTop {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #1a1a1a;
+            margin-bottom: 24px;
+            letter-spacing: -0.025em;
+            line-height: 1.1;
+            opacity: 0;
+            animation: typewriterTitle 1.5s cubic-bezier(0.22, 0.61, 0.36, 1) 0.6s forwards;
+        }
+
+        @keyframes typewriterTitle {
+            0% { 
+                width: 0;
+                opacity: 0;
+            }
+            40% {
+                opacity: 1;
+            }
+            100% { 
+                width: 100%;
+                opacity: 1;
+            }
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: #6b7280;
+            margin-bottom: 40px;
+            font-weight: 400;
+            line-height: 1.6;
+            opacity: 0;
+            animation: fadeInUp 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) 1.2s forwards;
+        }
+
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 48px;
+            opacity: 0;
+            animation: slideInFromBottom 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) 1.5s forwards;
+        }
+
+        @keyframes slideInFromBottom {
+            from { 
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            flex-wrap: wrap;
+            opacity: 0;
+            animation: fadeInUp 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) 1.8s forwards;
+        }
+
+        /* Professional floating animation for logo */
+        .logo-professional {
+            animation: professionalFloat 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes professionalFloat {
+            0%, 100% { 
+                transform: translateY(0px);
+                filter: drop-shadow(0 10px 20px rgba(37, 99, 235, 0.3));
+            }
+            50% { 
+                transform: translateY(-8px);
+                filter: drop-shadow(0 15px 25px rgba(37, 99, 235, 0.4));
+            }
+        }
+
+        @keyframes logoFadeIn {
+            from { 
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to { 
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Pulsing glow effect */
+        .pulse-glow {
+            animation: pulseGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { 
+                box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
+            }
+            50% { 
+                box-shadow: 0 0 40px rgba(37, 99, 235, 0.6), 
+                           0 0 60px rgba(37, 99, 235, 0.4);
+            }
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #1a1a1a;
+            margin-bottom: 24px;
+            letter-spacing: -0.025em;
+            line-height: 1.1;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: #6b7280;
+            margin-bottom: 40px;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 48px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2563eb;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        /* Features Section */
+        .section {
+            padding: 80px 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 64px;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+            letter-spacing: -0.025em;
+        }
+
+        .section-description {
+            font-size: 1.125rem;
+            color: #6b7280;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+            margin-bottom: 64px;
+        }
+
+        /* Simple border glow effect with smaller glow */
+        .feature-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 32px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: visible;
+            isolation: isolate;
+        }
+
+        /* Simple glow effects that appear directly on the border with smaller glow */
+        .feature-card.glow-top {
+            border-top: 2px solid #2563eb;
+            box-shadow: 0 -3px 8px -6px rgba(37, 99, 235, 0.6);
+        }
+
+        .feature-card.glow-right {
+            border-right: 2px solid #2563eb;
+            box-shadow: 3px 0 8px -6px rgba(37, 99, 235, 0.6);
+        }
+
+        .feature-card.glow-bottom {
+            border-bottom: 2px solid #2563eb;
+            box-shadow: 0 3px 8px -6px rgba(37, 99, 235, 0.6);
+        }
+
+        .feature-card.glow-left {
+            border-left: 2px solid #2563eb;
+            box-shadow: -3px 0 8px -6px rgba(37, 99, 235, 0.6);
+        }
+
+        .feature-card:hover {
+            border-color: #2563eb;
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: white;
+            font-size: 20px;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .feature-subtitle {
+            font-size: 14px;
+            color: #2563eb;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .feature-description {
+            color: #6b7280;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 6px 0;
+            color: #4b5563;
+            font-size: 14px;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .feature-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        /* Security Section */
+        .security-section {
+            background: #f8fafc;
+        }
+
+        .security-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 32px;
+        }
+
+        .security-card {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+
+        .security-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: white;
+            font-size: 24px;
+        }
+
+        .security-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .security-description {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        /* Download Section */
+        .download-section {
+            background: white;
+        }
+
+        .download-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-top: 48px;
+        }
+
+        .download-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .download-card:hover {
+            border-color: #2563eb;
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.1);
+        }
+
+        .platform-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: white;
+            font-size: 20px;
+        }
+
+        .platform-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .platform-details {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .download-btn {
+            width: 100%;
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .download-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        /* Footer */
+        .footer {
+            background: #1a1a1a;
+            color: white;
+            padding: 48px 0;
+            text-align: center;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: #d1d5db;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s ease;
+        }
+
+        .footer-link:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #374151;
+            font-size: 14px;
+            color: #9ca3af;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 16px;
+            }
+            
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .hero-stats {
+                gap: 32px;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        /* Smooth animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Staggered animations for feature cards */
+        .features-grid .fade-in:nth-child(1) { transition-delay: 0.1s; }
+        .features-grid .fade-in:nth-child(2) { transition-delay: 0.2s; }
+        .features-grid .fade-in:nth-child(3) { transition-delay: 0.3s; }
+        .features-grid .fade-in:nth-child(4) { transition-delay: 0.4s; }
+        .features-grid .fade-in:nth-child(5) { transition-delay: 0.5s; }
+        .features-grid .fade-in:nth-child(6) { transition-delay: 0.6s; }
+        .features-grid .fade-in:nth-child(7) { transition-delay: 0.7s; }
+
+        /* Border glow effects */
+
+    </style>
+</head>
+<body>
+    <!-- Preloader -->
+    <div class="preloader">
+        <div class="preloader-content">
+            <div class="preloader-logo">
+                <img src="assets/applogo.jpg" alt="StegoCrypt Suite" style="width: 100%; height: 100%; border-radius: 8px; object-fit: contain;">
+            </div>
+            <div class="preloader-text">LOADING</div>
+        </div>
+    </div>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="#" class="logo">
+                    <img src="assets/applogo.jpg" alt="StegoCrypt Suite Logo" class="logo-img" style="width: 36px; height: 36px; border-radius: 8px; object-fit: contain;">
+                    StegoCrypt Suite
+                </a>
+                <div class="nav-links">
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#security" class="nav-link">Security</a>
+                    <a href="#download" class="nav-link">Download</a>
+                    <a href="about.html" class="nav-link">About</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content fade-in">
+                <div class="hero-badge pulse-glow">
+                    <span>🔒</span>
+                    Version 3.0.0 Available Now
+                </div>
+                
+                <div class="logo-professional" style="width: 80px; height: 80px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 32px; opacity: 0; animation: logoFadeIn 0.8s cubic-bezier(0.22, 0.61, 0.36, 1) 0.9s forwards;">
+                    <img src="assets/applogo.jpg" alt="StegoCrypt Suite Logo" style="width: 100%; height: 100%; border-radius: 12px; object-fit: contain;">
+                </div>
+                
+                <h1 class="hero-title">StegoCrypt Suite</h1>
+                
+                <p class="hero-subtitle">
+                    Advanced Steganography & Cryptography Platform.
+                    Military-grade security with an intuitive Flutter interface. Windows standalone portable version requires no installation.
+                </p>
+                
+                <div class="hero-buttons">
+                    <button class="btn btn-primary" onclick="scrollToDownload()">
+                        Download for Free
+                    </button>
+                    <a href="#features" class="btn btn-secondary">
+                        View Features
+                    </a>
+                </div>
+                
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">AES-256</span>
+                        <span class="stat-label">Encryption</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">RSA-2048</span>
+                        <span class="stat-label">Key Length</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">FIPS 197</span>
+                        <span class="stat-label">Compliant</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">Cross-Platform</span>
+                        <span class="stat-label">Windows, macOS, Linux</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="section" id="features">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">Comprehensive Steganography Suite</h2>
+                <p class="section-description">
+                    Hide sensitive data within multimedia files using industry-standard algorithms and military-grade encryption. Powered by a Python CLI backend with a Flutter frontend.
+                </p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card fade-in">
+                    <div class="feature-icon"><img src="assets/photo.png" alt="Image Steganography" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="feature-title">Image Steganography</h3>
+                    <p class="feature-subtitle">LSB Encoding</p>
+                    <p class="feature-description">
+                        Hide confidential data within image files using Least Significant Bit encoding techniques. Processed by our Python CLI backend.
+                    </p>
+                    <ul class="feature-list">
+                        <li>RGB pixel manipulation</li>
+                        <li>PNG format support</li>
+                        <li>Invisible data embedding</li>
+                        <li>Delimiter-based extraction</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card fade-in">
+                    <div class="feature-icon"><img src="assets/audio.png" alt="Audio Steganography" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="feature-title">Audio Steganography</h3>
+                    <p class="feature-subtitle">Echo Hiding Techniques</p>
+                    <p class="feature-description">
+                        Conceal messages within audio files using sophisticated signal processing methods. Powered by pydub and numpy libraries.
+                    </p>
+                    <ul class="feature-list">
+                        <li>MP3 and WAV format support</li>
+                        <li>Echo hiding technique</li>
+                        <li>Spread spectrum methods</li>
+                        <li>Frequency masking</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card fade-in">
+                    <div class="feature-icon"><img src="assets/video.png" alt="Video Steganography" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="feature-title">Video Steganography</h3>
+                    <p class="feature-subtitle">Frame-Based Data Embedding</p>
+                    <p class="feature-description">
+                        Hide data within video files using temporal and spatial domain techniques. Utilizes OpenCV for advanced video processing.
+                    </p>
+                    <ul class="feature-list">
+                        <li>MP4 and AVI format support</li>
+                        <li>Frame-based embedding</li>
+                        <li>Motion vector utilization</li>
+                        <li>Real-time processing</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card fade-in">
+                    <div class="feature-icon"><img src="assets/text.png" alt="Text Steganography" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="feature-title">Text Steganography</h3>
+                    <p class="feature-subtitle">Zero-Width Characters</p>
+                    <p class="feature-description">
+                        Embed data using invisible Unicode characters within text for ultimate stealth. Implemented in our Python backend.
+                    </p>
+                    <ul class="feature-list">
+                        <li>Zero-width character encoding</li>
+                        <li>Unicode-based steganography</li>
+                        <li>Invisible to the naked eye</li>
+                        <li>High detection resistance</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card fade-in">
+                    <div class="feature-icon"><img src="assets/military.png" alt="AES Encryption" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="feature-title">AES Encryption</h3>
+                    <p class="feature-subtitle">Advanced Encryption Standard</p>
+                    <p class="feature-description">
+                        Military-grade symmetric encryption with 128-bit key support for maximum security. Uses pycryptodome library.
+                    </p>
+                    <ul class="feature-list">
+                        <li>AES-128-EAX mode encryption</li>
+                        <li>PBKDF2 key derivation</li>
+                        <li>Password-based key generation</li>
+                        <li>Key storage in secure location</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card fade-in">
+                    <div class="feature-icon"><img src="assets/rsa.png" alt="RSA Encryption" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="feature-title">RSA Encryption</h3>
+                    <p class="feature-subtitle">Public Key Cryptography</p>
+                    <p class="feature-description">
+                        Asymmetric 2048-bit RSA encryption for secure key exchange and digital signatures. Implemented with pycryptodome.
+                    </p>
+                    <ul class="feature-list">
+                        <li>RSA key pair generation</li>
+                        <li>Public/private key management</li>
+                        <li>Digital signature support</li>
+                        <li>Key exchange protocols</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card fade-in">
+                    <div class="feature-icon"><img src="assets/hashing.png" alt="Secure Hashing" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="feature-title">Secure Hashing</h3>
+                    <p class="feature-subtitle">Multiple Algorithm Support</p>
+                    <p class="feature-description">
+                        Cryptographic hash functions for data integrity verification and password security. Supports multiple algorithms.
+                    </p>
+                    <ul class="feature-list">
+                        <li>MD5, SHA-1, SHA-256, SHA-512 support</li>
+                        <li>Message hashing and verification</li>
+                        <li>Data integrity checking</li>
+                        <li>Password security functions</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card fade-in">
+                    <div class="feature-icon"><img src="assets/filesecurity.png" alt="File Security" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="feature-title">File Security</h3>
+                    <p class="feature-subtitle">X25519 + AES-GCM</p>
+                    <p class="feature-description">
+                        Advanced file encryption using modern cryptographic techniques for maximum security. Uses cryptography library.
+                    </p>
+                    <ul class="feature-list">
+                        <li>X25519 Key Encapsulation Mechanism</li>
+                        <li>AES-256-GCM authenticated encryption</li>
+                        <li>Shamir's Secret Sharing support</li>
+                        <li>Password-protected key storage</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Security Section -->
+    <section class="section security-section" id="security">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">Enterprise-Grade Security</h2>
+                <p class="section-description">
+                    Built with security-first principles and compliance with international cryptographic standards.
+                </p>
+            </div>
+            
+            <div class="security-grid">
+                <div class="security-card fade-in">
+                    <div class="security-icon"><img src="assets/zeroknowledge.png" alt="Zero-Knowledge Architecture" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="security-title">Zero-Knowledge Architecture</h3>
+                    <p class="security-description">Complete privacy protection with no data retention</p>
+                </div>
+                
+                <div class="security-card fade-in">
+                    <div class="security-icon"><img src="assets/military.png" alt="Military-Grade Encryption" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="security-title">Military-Grade Encryption</h3>
+                    <p class="security-description">FIPS 197 compliant AES and 2048-bit RSA implementations</p>
+                </div>
+                
+                <div class="security-card fade-in">
+                    <div class="security-icon"><img src="assets/optimizedperformance.png" alt="Optimized Performance" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="security-title">Optimized Performance</h3>
+                    <p class="security-description">High-speed algorithms with minimal system impact</p>
+                </div>
+                
+                <div class="security-card fade-in">
+                    <div class="security-icon"><img src="assets/zeroknowledge.png" alt="Open Source Core" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="security-title">Open Source Core</h3>
+                    <p class="security-description">Transparent and auditable cryptographic implementations</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section class="section download-section" id="download">
+        <div class="container">
+            <div class="section-header fade-in">
+                <h2 class="section-title">Download StegoCrypt Suite</h2>
+                <p class="section-description">
+                    Currently available for Windows as a standalone portable application. macOS and Linux versions are in development.
+                </p>
+            </div>
+            
+            <div class="download-cards">
+                <div class="download-card fade-in">
+                    <div class="platform-icon"><img src="assets/windows.png" alt="Windows" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="platform-name">Windows</h3>
+                    <p class="platform-details">Version 1.0.0 • 76 MB<br>Windows 10 or later<br>Standalone portable version</p>
+                    <button class="download-btn" onclick="downloadForPlatform('Windows')">
+                        Download for Windows
+                    </button>
+                </div>
+                
+                <div class="download-card fade-in">
+                    <div class="platform-icon"><img src="assets/apple.png" alt="macOS" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="platform-name">macOS</h3>
+                    <p class="platform-details">Version 1.0.0 • 76 MB<br>macOS 10.14 or later<br>Standalone portable version</p>
+                    <button class="download-btn" onclick="downloadForPlatform('macOS')" >
+                        Download for macOS
+                    </button>
+                </div>
+                
+                <div class="download-card fade-in">
+                    <div class="platform-icon"><img src="assets/linux.png" alt="Linux" style="width: 100%; height: 100%; object-fit: contain;"></div>
+                    <h3 class="platform-name">Linux</h3>
+                    <p class="platform-details">Version 1.0.0 • 76 MB<br>Ubuntu 18.04 or equivalent<br>Standalone portable version</p>
+                    <button class="download-btn" onclick="downloadForPlatform('Linux')" >
+                        Download for Linux
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <img src="assets/applogo.jpg" alt="StegoCrypt Suite Logo" class="logo-img" style="width: 36px; height: 36px; border-radius: 8px; object-fit: contain;">
+                    StegoCrypt Suite
+                </div>
+                <div class="footer-links">
+                    <a href="docs.html" class="footer-link">Documentation</a>
+                    <a href="support.html" class="footer-link">Support</a>
+                    <a href="license.html" class="footer-link">License</a>
+                    <a href="about.html" class="footer-link">About</a>
+                    <a href="https://github.com/blaze697214/StegoCrypt-Suite" class="footer-link">GitHub</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                © 2025 StegoCrypt Suite. Built for security professionals worldwide.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Add a slight delay for staggered effect
+                    setTimeout(() => {
+                        entry.target.classList.add('visible');
+                    }, 100);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Download functionality
+        function downloadForPlatform(platform) {
+            // Create download links for actual files
+            const fileUrls = {
+                'Windows': './downloads/StegoCrypt-Suite-Windows-Portable.zip',
+                'macOS': './downloads/StegoCrypt-Suite-Windows-Portable.zip',
+                'Linux': './downloads/StegoCrypt-Suite-Windows-Portable.zip'
+            };
+            
+            // Alert user about Windows-only build
+            // if (platform !== 'Windows') {
+            //     alert(platform + ' version is not yet available. Currently only Windows version is supported.');
+            //     return;
+            // }
+            
+            // Create anchor element for download
+            const a = document.createElement('a');
+            a.href = fileUrls[platform];
+            a.download = 'StegoCrypt-Suite-Windows-Portable.zip';
+            a.style.display = 'none';
+            
+            // Trigger download
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function scrollToDownload() {
+            document.getElementById('download').scrollIntoView({
+                behavior: 'smooth'
+            });
+        }
+
+        // Preloader
+        window.addEventListener('load', function() {
+            const preloader = document.querySelector('.preloader');
+            if (preloader) {
+                // Add a slight delay to show the preloader
+                setTimeout(function() {
+                    preloader.classList.add('hidden');
+                    document.body.style.overflow = 'auto';
+                }, 800);
+            }
+        });
+
+        // Simple border glow that appears directly on the border
+        document.querySelectorAll('.feature-card').forEach(card => {
+            // Remove any existing glow elements
+            card.querySelectorAll('.cursor-glow, .border-glow, .corner-glow, .border-glow-overlay').forEach(el => el.remove());
+            
+            let animationFrameId = null;
+            let currentGlowClass = null;
+            
+            // Function to remove glow class
+            function removeGlowClass() {
+                if (currentGlowClass) {
+                    card.classList.remove(currentGlowClass);
+                    currentGlowClass = null;
+                }
+            }
+            
+            card.addEventListener('mouseenter', function() {
+                // Glow will be added on mousemove
+            });
+
+            card.addEventListener('mouseleave', function() {
+                // Cancel any pending animation frame
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                removeGlowClass();
+            });
+
+            card.addEventListener('mousemove', function(e) {
+                // Cancel previous animation frame for better performance
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                
+                // Use requestAnimationFrame for smooth performance
+                animationFrameId = requestAnimationFrame(() => {
+                    const rect = this.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const width = rect.width;
+                    const height = rect.height;
+                    
+                    // Calculate relative position (0 to 1)
+                    const relX = x / width;
+                    const relY = y / height;
+                    
+                    // Define activation zones (20% of the border width)
+                    const zone = 0.2;
+                    
+                    // Determine which border segment to glow
+                    let newGlowClass = null;
+                    
+                    // Top border
+                    if (relY < zone) {
+                        newGlowClass = 'glow-top';
+                    }
+                    // Bottom border
+                    else if (relY > (1 - zone)) {
+                        newGlowClass = 'glow-bottom';
+                    }
+                    // Left border
+                    else if (relX < zone) {
+                        newGlowClass = 'glow-left';
+                    }
+                    // Right border
+                    else if (relX > (1 - zone)) {
+                        newGlowClass = 'glow-right';
+                    }
+                    
+                    // Update glow class if changed
+                    if (newGlowClass !== currentGlowClass) {
+                        removeGlowClass();
+                        if (newGlowClass) {
+                            card.classList.add(newGlowClass);
+                            currentGlowClass = newGlowClass;
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

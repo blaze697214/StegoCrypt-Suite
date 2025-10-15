@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'cyber_theme.dart';
 import 'cyber_widgets.dart';
+import 'backend_utils.dart';
 
 class HashingPage extends StatefulWidget {
   const HashingPage({super.key});
@@ -28,33 +30,39 @@ class _HashingPageState extends State<HashingPage> {
       _encryptedText = null;
     });
 
-    final executable = Platform.isWindows ? 'python' : 'python3';
-    final scriptPath =
-        Platform.isWindows ? 'backend\\stegocrypt_cli.py' : 'backend/stegocrypt_cli.py';
+    try {
+      final command = await getBackendCommand();
+      final result = await Process.run(command.first, [
+        ...command.skip(1),
+        'hash',
+        '--message',
+        _messageController.text,
+        '--algorithm',
+        _selectedAlgorithm,
+      ]);
 
-    final result = await Process.run(executable, [
-      scriptPath,
-      'hash',
-      '--message',
-      _messageController.text,
-      '--algorithm',
-      _selectedAlgorithm,
-    ]);
-
-    if (mounted) {
-      setState(() {
-        if (result.exitCode == 0) {
-          final output = jsonDecode(result.stdout);
-          if (output['status'] == 'success') {
-            _encryptedText = output['hash'];
+      if (mounted) {
+        setState(() {
+          if (result.exitCode == 0) {
+            final output = jsonDecode(result.stdout);
+            if (output['status'] == 'success') {
+              _encryptedText = output['hash'];
+            } else {
+              _errorText = output['message'];
+            }
           } else {
-            _errorText = output['message'];
+            _errorText = result.stderr;
           }
-        } else {
-          _errorText = result.stderr;
-        }
-        _isEncrypting = false;
-      });
+          _isEncrypting = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorText = 'Error: ${e.toString()}';
+          _isEncrypting = false;
+        });
+      }
     }
   }
 

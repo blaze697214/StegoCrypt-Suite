@@ -1,17 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async'; // Add this import for Timer
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as p;
 import 'cyber_theme.dart';
 import 'app_provider.dart';
 import 'cyber_widgets.dart';
+import 'backend_utils.dart';
 
-// Helper to get the backend script path
-Future<String> getBackendPath() async {
-  final baseDir = Directory.current.path;
-  return p.join(baseDir, 'backend', 'stegocrypt_cli.py');
-}
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -28,6 +26,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int _totalOperations = 0;
   int _filesProcessed = 0;
   bool _isLoadingLogs = true;
+  late Timer _logRefreshTimer; // Add timer variable
+  
+  // Backend connection state
+  bool _isBackendConnected = false;
+  bool _isTestingBackend = false;
+  String _backendStatus = 'Not connected';
+  String? _backendError;
+  List<String> _supportedAlgorithms = [];
+  List<String> _supportedHashAlgorithms = [];
 
   @override
   void initState() {
@@ -53,11 +60,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     _animationController.forward();
     _fetchRecentLogs();
+    
+    // Refresh logs every 10 seconds
+    _logRefreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted) {
+        _fetchRecentLogs();
+      }
+    });
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _logRefreshTimer.cancel(); // Cancel the timer
     super.dispose();
   }
 
@@ -65,25 +80,79 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     if (!mounted) return;
     setState(() => _isLoadingLogs = true);
     try {
-      final backendPath = await getBackendPath();
-      final pythonExec = Platform.isWindows ? 'python' : 'python3';
-      final result = await Process.run(pythonExec, [backendPath, 'get-log-stats']);
+      final command = await getBackendCommand();
+      final result = await Process.run(command.first, [
+        ...command.skip(1),
+        'get-log-stats',
+      ]);
 
       if (result.exitCode == 0) {
         final output = jsonDecode(result.stdout);
         if (output['status'] == 'success' && output['stats'] is Map) {
           if (!mounted) return;
           setState(() {
-            _recentLogs = List<Map<String, dynamic>>.from(output['stats']['recent_logs']);
-            _totalOperations = output['stats']['total_operations'];
-            _filesProcessed = output['stats']['files_processed'];
+            _recentLogs = List<Map<String, dynamic>>.from(output['stats']['recent_logs'] ?? []);
+            _totalOperations = output['stats']['total_operations'] ?? 0;
+            _filesProcessed = output['stats']['files_processed'] ?? 0;
           });
         }
+      } else {
+        // Log error for debugging
+        print('Log fetch error: ${result.stderr}');
       }
     } catch (e) {
       // Handle error, maybe show a snackbar
+      print('Exception fetching logs: $e');
     } finally {
       if (mounted) setState(() => _isLoadingLogs = false);
+    }
+  }
+
+  Future<void> _testBackendConnection() async {
+    setState(() {
+      _isTestingBackend = true;
+      _backendStatus = 'Testing...';
+      _backendError = null;
+    });
+
+    try {
+      final command = await getBackendCommand();
+      final result = await Process.run(command.first, [
+        ...command.skip(1),
+        'algorithms',
+      ]);
+
+      if (result.exitCode == 0) {
+        final output = jsonDecode(result.stdout);
+        if (output['status'] == 'success') {
+          setState(() {
+            _isBackendConnected = true;
+            _backendStatus = 'Connected';
+            _supportedAlgorithms = output['encryption'];
+            _supportedHashAlgorithms = output['hashing'];
+          });
+        } else {
+          setState(() {
+            _isBackendConnected = false;
+            _backendStatus = 'Connection failed';
+            _backendError = output['message'] ?? 'Unknown error';
+          });
+        }
+      } else {
+        setState(() {
+          _isBackendConnected = false;
+          _backendStatus = 'Connection failed';
+          _backendError = result.stderr.toString();
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isBackendConnected = false;
+        _backendStatus = 'Connection failed';
+        _backendError = e.toString();
+      });
+    } finally {
+      setState(() => _isTestingBackend = false);
     }
   }
 

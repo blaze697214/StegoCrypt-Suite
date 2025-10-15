@@ -6,12 +6,9 @@ import 'package:path/path.dart' as p;
 import 'package:file_picker/file_picker.dart';
 import 'cyber_theme.dart';
 import 'cyber_widgets.dart';
+import 'backend_utils.dart';
 
-// Helper to get the backend script path
-Future<String> getBackendPath() async {
-  final baseDir = Directory.current.path;
-  return p.join(baseDir, 'backend', 'stegocrypt_cli.py');
-}
+
 
 class DecryptPage extends StatefulWidget {
   const DecryptPage({super.key});
@@ -70,10 +67,9 @@ class _DecryptPageState extends State<DecryptPage> {
     });
 
     try {
-      final backendPath = await getBackendPath();
-      final pythonExec = Platform.isWindows ? 'python' : 'python3';
-      final result = await Process.run(pythonExec, [
-        backendPath,
+      final command = await getBackendCommand();
+      final result = await Process.run(command.first, [
+        ...command.skip(1),
         'decrypt',
         '--ciphertext',
         _ciphertextController.text,
@@ -110,7 +106,7 @@ class _DecryptPageState extends State<DecryptPage> {
     }
   }
 
-  Future<void> _runRsaCommand(String command,
+  Future<void> _runRsaCommand(String commandName,
       {List<String> args = const [], Function? onLoading}) async {
     if (onLoading != null) onLoading(true);
     setState(() {
@@ -119,12 +115,11 @@ class _DecryptPageState extends State<DecryptPage> {
     });
 
     try {
-      final backendPath = await getBackendPath();
-      final pythonExec = Platform.isWindows ? 'python' : 'python3';
-      final result = await Process.run(pythonExec, [
-        backendPath,
+      final command = await getBackendCommand();
+      final result = await Process.run(command.first, [
+        ...command.skip(1),
         'rsa',
-        command,
+        commandName,
         ...args,
       ]);
 
@@ -161,23 +156,42 @@ class _DecryptPageState extends State<DecryptPage> {
         onLoading: (val) => setState(() => _isGeneratingKeys = val));
   }
 
-  void _importKeyPair() async {
+  void _importPublicKey() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
+      allowMultiple: false,
       type: FileType.custom,
       allowedExtensions: ['pem'],
     );
 
-    if (result != null && result.files.length == 2) {
-      final pubFile = result.files.firstWhere((f) => f.name.contains('public'), orElse: () => result.files[0]);
-      final privFile = result.files.firstWhere((f) => f.name.contains('private'), orElse: () => result.files[1]);
-
+    if (result != null && result.files.single.path != null) {
+      final pubFile = result.files.single;
+      
       _runRsaCommand('import-keys',
-          args: ['--pub-file', pubFile.path!, '--priv-file', privFile.path!],
+          args: ['--pub-file', pubFile.path!, '--priv-file', '""'], // Empty string for private key
           onLoading: (val) => setState(() => _isImportingKeys = val));
     } else {
       setState(() {
-        _errorText = "Please select both a public and a private .pem file.";
+        _errorText = "Please select a public .pem file.";
+      });
+    }
+  }
+
+  void _importPrivateKey() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      allowMultiple: false,
+      type: FileType.custom,
+      allowedExtensions: ['pem'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      final privFile = result.files.single;
+      
+      _runRsaCommand('import-keys',
+          args: ['--pub-file', '""', '--priv-file', privFile.path!], // Empty string for public key
+          onLoading: (val) => setState(() => _isImportingKeys = val));
+    } else {
+      setState(() {
+        _errorText = "Please select a private .pem file.";
       });
     }
   }
@@ -406,21 +420,48 @@ class _DecryptPageState extends State<DecryptPage> {
           ),
         ),
         const SizedBox(height: 16),
+        // Place import public and private key buttons side by side
         Row(
           children: [
-            CyberButton(
-              text: 'Import Key Pair',
-              icon: Icons.file_upload_outlined,
-              onPressed: _importKeyPair,
-              isLoading: _isImportingKeys,
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: CyberButton(
+                  text: 'Import Public Key',
+                  icon: Icons.file_upload_outlined,
+                  onPressed: _importPublicKey,
+                  isLoading: _isImportingKeys,
+                  variant: CyberButtonVariant.secondary,
+                ),
+              ),
             ),
-            const SizedBox(width: 16),
-            CyberButton(
-              text: 'Export Key Pair',
-              icon: Icons.file_download_outlined,
-              onPressed: _exportKeyPair,
-              isLoading: _isExportingKeys,
-              variant: CyberButtonVariant.primary,
+            const SizedBox(width: 8),
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: CyberButton(
+                  text: 'Import Private Key',
+                  icon: Icons.file_upload_outlined,
+                  onPressed: _importPrivateKey,
+                  isLoading: _isImportingKeys,
+                  variant: CyberButtonVariant.secondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Elongated export button below them
+        Row(
+          children: [
+            Expanded(
+              child: CyberButton(
+                text: 'Export Key Pair',
+                icon: Icons.file_download_outlined,
+                onPressed: _exportKeyPair, // Always enabled
+                isLoading: _isExportingKeys,
+                variant: CyberButtonVariant.primary,
+              ),
             ),
           ],
         ),
